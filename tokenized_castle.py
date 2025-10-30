@@ -6,7 +6,7 @@ from constants import *
 class TokenizedCastle:
     # TODO: que la semilla sea algo diferente
     def __init__(self, tokenizer_id: str, test_size=.2, seed=42):
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id, token=ACCESS_TOKEN)
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
 
         self.dataset = load_dataset('json', data_files='datasets/CASTLE-C250.json', field='tests')
 

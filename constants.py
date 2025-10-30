@@ -1,5 +1,3 @@
-ACCESS_TOKEN = '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'
-
 """
 "microsoft/deberta-base-mnli"
 "google-bert/bert-base-cased"
