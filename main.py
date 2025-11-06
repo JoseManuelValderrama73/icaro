@@ -4,8 +4,9 @@ import evaluate
 from constants import *
 from tokenized_castle import TokenizedCastle
 
-#from huggingface_hub import login
-#login()
+from huggingface_hub import HfFolder, login
+if HfFolder.get_token() is None:
+    login()
 
 model = AutoModelForSequenceClassification.from_pretrained(MODEL, num_labels=2) # 2 etiquetas: vulnerable o no vulnerable
 
