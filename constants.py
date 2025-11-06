@@ -1,17 +1,15 @@
 """
-"microsoft/deberta-base-mnli"
+"microsoft/deberta-base"
 "google-bert/bert-base-cased"
-"prajjwal1/bert-tiny"
 """
-MODEL = "google-bert/bert-base-cased"
+MODEL = 'microsoft/deberta-base'
 
 """
-"SetFit/emotion"
-'yelp_review_full'
+'castle'
 """
-DATASET = "yelp_review_full"
+DATASET = 'castle'
 
-TRAINING_OUTPUT_DIR = "training/"
+TRAINING_OUTPUT_DIR = f"training/{MODEL.split('/')[-1]}/{DATASET}"
 
-BATCH_SIZE = 10
+BATCH_SIZE = 5
 EPOCHS = 1
