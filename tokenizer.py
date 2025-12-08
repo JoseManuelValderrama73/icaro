@@ -34,7 +34,6 @@ class TokenizedCastle:
         #    print("len(input_ids):", len(sample['input_ids']))
 
     def tokenize(self, examples):
-        
         # use tokenizer/model max length but cap it to 512 for memory safety
         max_length = min(getattr(self.tokenizer, "model_max_length", 512), 512)
         tk = self.tokenizer(
@@ -63,6 +62,41 @@ class TokenizedCastle:
             'train': train_test['train'],
             'test': train_test['test']
         })
+
+    def __getitem__(self, idx):
+        return self.dataset[idx]
+
+    def __len__(self):
+        return len(self.dataset)
+
+class TokenizedDraper:
+    def __init__(self, tokenizer_id: str):
+        self.dataset = load_dataset("claudios/Draper")
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+        
+        # Remove original columns to avoid conflicts
+        self.dataset = self.dataset.map(
+            self.tokenize, 
+            batched=True,
+            remove_columns=self.dataset['train'].column_names
+        )
+
+    def tokenize(self, examples):
+        tk = self.tokenizer(
+            examples["functionSource"], 
+            padding="max_length", 
+            truncation=True,
+            max_length=512  # Add explicit max_length for consistency
+        )
+        # Fix the labels computation
+        tk['labels'] = []
+        for i in range(len(examples['functionSource'])):
+            has_vulnerability = any(
+                examples[cwe][i] 
+                for cwe in ['CWE-119', 'CWE-120', 'CWE-469', 'CWE-476', 'CWE-other']
+            )
+            tk['labels'].append(1 if has_vulnerability else 0)
+        return tk
 
     def __getitem__(self, idx):
         return self.dataset[idx]

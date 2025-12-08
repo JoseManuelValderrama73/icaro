@@ -3,17 +3,21 @@ import numpy as np
 import evaluate
 from constants import *
 import tokenizer
-
 from huggingface_hub import HfFolder, login
+
 if HfFolder.get_token() is None:
     login()
 
 model = AutoModelForSequenceClassification.from_pretrained(MODEL, num_labels=2) # 2 etiquetas: vulnerable o no vulnerable
+if DATASET == 'castle':
+    dataset = tokenizer.TokenizedCastle(tokenizer_id=MODEL)
+elif DATASET == 'draper':
+    dataset = tokenizer.TokenizedDraper(tokenizer_id=MODEL)
 
-dataset = tokenizer.TokenizedCastle(tokenizer_id=MODEL)
+else:
+    raise ValueError("Dataset invalido")
 
 metric = evaluate.load("accuracy")
-
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
@@ -25,11 +29,13 @@ training_args = TrainingArguments(
     per_device_train_batch_size=BATCH_SIZE,
     per_device_eval_batch_size=BATCH_SIZE,
     num_train_epochs=EPOCHS,
-    #logging_dir='./logs',
-    #logging_steps=100,
+    # logs
+    logging_dir='./logs',
+    logging_steps=10,
     save_strategy="epoch",
+    report_to="tensorboard",
     #load_best_model_at_end=True,
-    #metric_for_best_model="accuracy"
+    metric_for_best_model="accuracy"
 )
 
 trainer = Trainer(
@@ -41,6 +47,8 @@ trainer = Trainer(
 )
 
 trainer.train()
+
+
 """
 
 inputs = tokenizer(
