@@ -2,7 +2,7 @@ from transformers import AutoModelForSequenceClassification, Trainer, TrainingAr
 import numpy as np
 import evaluate
 from constants import *
-import tokenizer
+from tokenizer import *
 from huggingface_hub import HfFolder, login
 
 if HfFolder.get_token() is None:
@@ -10,9 +10,11 @@ if HfFolder.get_token() is None:
 
 model = AutoModelForSequenceClassification.from_pretrained(MODEL, num_labels=2) # 2 etiquetas: vulnerable o no vulnerable
 if DATASET == 'castle':
-    dataset = tokenizer.TokenizedCastle(tokenizer_id=MODEL)
+    dataset = TokenizedCastle(tokenizer_id=MODEL)
 elif DATASET == 'draper':
-    dataset = tokenizer.TokenizedDraper(tokenizer_id=MODEL)
+    dataset = TokenizedDraper(tokenizer_id=MODEL, minimize_factor=None)
+elif DATASET == 'formai':
+    dataset = TokenizedFormAI(tokenizer_id=MODEL)
 
 else:
     raise ValueError("Dataset invalido")

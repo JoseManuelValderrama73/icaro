@@ -3,22 +3,20 @@ from transformers import AutoTokenizer
 from datasets import load_dataset
 from constants import *
 
-class TokenizedCastle:
-    # TODO: que la semilla sea algo diferente
-    def __init__(self, tokenizer_id: str, test_size=.2, seed=42):
-        self.dataset = load_dataset('json', data_files='datasets/CASTLE-C250.json', field='tests')
+class TokenizedDataset:
+    def __init__(self, tokenizer_id: str, dataset, code_snippet, minimize_factor):
+        self.dataset = dataset
+        if minimize_factor:
+            self.minimize(minimize_factor)
+        print(self.dataset)
+
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
 
-        # remove any leftover tokenization columns that could have inconsistent lengths
-        #token_cols = {'input_ids', 'attention_mask', 'token_type_ids', 'labels', 'special_tokens_mask', 'offset_mapping'}
-        #for split in list(self.dataset.keys()):
-        #    cols_to_remove = [c for c in self.dataset[split].column_names if c in token_cols]
-        #    if cols_to_remove:
-        #        self.dataset[split] = self.dataset[split].remove_columns(cols_to_remove)
-
-        self.train_test_split(test_size, seed)
-
-        self.dataset = self.dataset.map(self.tokenize, batched=True)
+        if 'train' not in self.dataset or 'test' not in self.dataset:
+            self.train_test_split(TEST_SIZE, SEED)
+            
+        self.code_snippet = code_snippet
+        self.dataset = self.dataset.map(self.tokenize, batched=True, remove_columns=self.dataset['train'].column_names)
         '''
         try:
             self.dataset.cleanup_cache_files()
@@ -26,18 +24,10 @@ class TokenizedCastle:
             pass
         '''
 
-        # optional quick sanity check
-        #sample = self.dataset['train'][0]
-        #print("tokenizer max_length:", self.max_length)
-        #print("sample keys:", list(sample.keys()))
-        #if 'input_ids' in sample:
-        #    print("len(input_ids):", len(sample['input_ids']))
-
     def tokenize(self, examples):
-        # use tokenizer/model max length but cap it to 512 for memory safety
         max_length = min(getattr(self.tokenizer, "model_max_length", 512), 512)
         tk = self.tokenizer(
-            examples['code'],
+            examples[self.code_snippet],
             padding="max_length",
             truncation=True,
             max_length=max_length,
@@ -52,16 +42,23 @@ class TokenizedCastle:
             max_position_embeddings=1748  # Adjust model to accept longer sequences
         )
         """
-        # convierto de True y False a 1 y 0
-        tk['labels'] = [int(v) for v in examples['vulnerable']]
+        self.label(tk, examples)
         return tk
-
+    
     def train_test_split(self, test_size, seed):
+        print('se divide el dataset en train y test')
         train_test = self.dataset['train'].train_test_split(test_size=test_size, seed=seed)
         self.dataset = DatasetDict({
             'train': train_test['train'],
             'test': train_test['test']
         })
+    
+    def minimize(self, factor):
+        for split in self.dataset.keys():
+            self.dataset[split] = self.dataset[split].shuffle(seed=SEED).select(range(int(len(self.dataset[split]) * factor)))
+
+    def label(self):
+        raise NotImplementedError("Subclase debe implementar el método label()")
 
     def __getitem__(self, idx):
         return self.dataset[idx]
@@ -69,26 +66,24 @@ class TokenizedCastle:
     def __len__(self):
         return len(self.dataset)
 
-class TokenizedDraper:
-    def __init__(self, tokenizer_id: str):
-        self.dataset = load_dataset("claudios/Draper")
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
-        
-        # Remove original columns to avoid conflicts
-        self.dataset = self.dataset.map(
-            self.tokenize, 
-            batched=True,
-            remove_columns=self.dataset['train'].column_names
-        )
 
-    def tokenize(self, examples):
-        tk = self.tokenizer(
-            examples["functionSource"], 
-            padding="max_length", 
-            truncation=True,
-            max_length=512  # Add explicit max_length for consistency
-        )
-        # Fix the labels computation
+class TokenizedCastle(TokenizedDataset):
+    def __init__(self, tokenizer_id: str, minimize_factor=None):
+        dataset = load_dataset('json', data_files='datasets/CASTLE-C250.json', field='tests')
+        super().__init__(tokenizer_id, dataset, 'code', minimize_factor=minimize_factor)
+
+    def label(self, tk, examples):
+        # convierto de True y False a 1 y 0
+        tk['labels'] = [int(v) for v in examples['vulnerable']]
+
+
+
+class TokenizedDraper(TokenizedDataset):
+    def __init__(self, tokenizer_id: str, minimize_factor=None):
+        dataset = load_dataset("claudios/Draper")
+        super().__init__(tokenizer_id, dataset, 'functionSource', minimize_factor=minimize_factor)
+
+    def label(self, tk, examples):
         tk['labels'] = []
         for i in range(len(examples['functionSource'])):
             has_vulnerability = any(
@@ -96,10 +91,7 @@ class TokenizedDraper:
                 for cwe in ['CWE-119', 'CWE-120', 'CWE-469', 'CWE-476', 'CWE-other']
             )
             tk['labels'].append(1 if has_vulnerability else 0)
-        return tk
+    
 
-    def __getitem__(self, idx):
-        return self.dataset[idx]
-
-    def __len__(self):
-        return len(self.dataset)
+class TokenizedFormAI(TokenizedDataset):
+    pass

@@ -5,10 +5,14 @@
 MODEL = 'microsoft/deberta-base'
 
 """
-'castle'
-'draper'
+castle
+draper
+formai
 """
-DATASET = 'castle'
+DATASET = 'draper'
+TEST_SIZE = 0.2
+# TODO: que la semilla sea algo diferente
+SEED = 42
 
 TRAINING_OUTPUT_DIR = f"training/{MODEL.split('/')[-1]}/{DATASET}"
 
