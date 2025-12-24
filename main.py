@@ -12,9 +12,9 @@ model = AutoModelForSequenceClassification.from_pretrained(MODEL, num_labels=2) 
 if DATASET == 'castle':
     dataset = TokenizedCastle(tokenizer_id=MODEL)
 elif DATASET == 'draper':
-    dataset = TokenizedDraper(tokenizer_id=MODEL, minimize_factor=None)
+    dataset = TokenizedDraper(tokenizer_id=MODEL)
 elif DATASET == 'formai':
-    dataset = TokenizedFormAI(tokenizer_id=MODEL)
+    dataset = TokenizedFormAI(tokenizer_id=MODEL, minimize_factor=.1)
 
 else:
     raise ValueError("Dataset invalido")

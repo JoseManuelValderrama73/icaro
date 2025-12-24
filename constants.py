@@ -9,7 +9,7 @@ castle
 draper
 formai
 """
-DATASET = 'draper'
+DATASET = 'formai'
 TEST_SIZE = 0.2
 # TODO: que la semilla sea algo diferente
 SEED = 42

@@ -8,7 +8,6 @@ class TokenizedDataset:
         self.dataset = dataset
         if minimize_factor:
             self.minimize(minimize_factor)
-        print(self.dataset)
 
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
 
@@ -54,10 +53,19 @@ class TokenizedDataset:
         })
     
     def minimize(self, factor):
+        """
+        Minimiza el dataset para pruebas rápidas.
+        @param factor: factor de minimización
+        """
         for split in self.dataset.keys():
             self.dataset[split] = self.dataset[split].shuffle(seed=SEED).select(range(int(len(self.dataset[split]) * factor)))
 
-    def label(self):
+    def label(self, tk, examples):
+        """
+        Etiqueta los ejemplos tokenizados.
+        @param tk: tokenizaciones
+        @param examples: ejemplos originales
+        """
         raise NotImplementedError("Subclase debe implementar el método label()")
 
     def __getitem__(self, idx):
@@ -76,16 +84,15 @@ class TokenizedCastle(TokenizedDataset):
         # convierto de True y False a 1 y 0
         tk['labels'] = [int(v) for v in examples['vulnerable']]
 
-
-
 class TokenizedDraper(TokenizedDataset):
     def __init__(self, tokenizer_id: str, minimize_factor=None):
-        dataset = load_dataset("claudios/Draper")
-        super().__init__(tokenizer_id, dataset, 'functionSource', minimize_factor=minimize_factor)
+        self.code_snippet = 'functionSource'
+        dataset = load_dataset("Joshfcooper/formai-v2-full")
+        super().__init__(tokenizer_id, dataset, self.code_snippet, minimize_factor=minimize_factor)
 
     def label(self, tk, examples):
         tk['labels'] = []
-        for i in range(len(examples['functionSource'])):
+        for i in range(len(examples[self.code_snippet])):
             has_vulnerability = any(
                 examples[cwe][i] 
                 for cwe in ['CWE-119', 'CWE-120', 'CWE-469', 'CWE-476', 'CWE-other']
@@ -94,4 +101,10 @@ class TokenizedDraper(TokenizedDataset):
     
 
 class TokenizedFormAI(TokenizedDataset):
-    pass
+    def __init__(self, tokenizer_id: str, minimize_factor=None):
+        self.code_snippet = "source_code"
+        dataset = load_dataset("Joshfcooper/formai-v2-full")
+        super().__init__(tokenizer_id, dataset, self.code_snippet, minimize_factor=minimize_factor)
+
+    def label(self, tk, examples):
+        tk['labels'] = [0 if line == -1 else 1 for line in examples['vulnerable_line']]
