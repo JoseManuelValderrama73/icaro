@@ -113,8 +113,14 @@ class TokenizedDraper(TokenizedDataset):
 class TokenizedFormAI(TokenizedDataset):
     def __init__(self, tokenizer_id: str, minimize_factor=None):
         self.code_snippet = "source_code"
-        dataset = load_dataset("Joshfcooper/formai-v2-full")
-        super().__init__(tokenizer_id, dataset, self.code_snippet, minimize_factor=minimize_factor)
+        self.dataset = load_dataset("Joshfcooper/formai-v2-full")
+        self.cleanup()
+        super().__init__(tokenizer_id, self.dataset, self.code_snippet, minimize_factor=minimize_factor)
 
     def label(self, tk, examples):
         tk['labels'] = [0 if line == -1 else 1 for line in examples['vulnerable_line']]
+    
+    def cleanup(self):
+        """ remove every row where 'verification_finished' is False """
+        self.dataset = self.dataset.filter(lambda example: example['verification_finished'] == 'yes')
+        
