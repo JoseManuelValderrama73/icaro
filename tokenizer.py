@@ -7,6 +7,8 @@ class TokenizedDataset:
     def __init__(self, tokenizer_id: str, dataset, code_snippet, minimize_factor):
         self.dataset = dataset
         if minimize_factor:
+            if minimize_factor <= 0 or minimize_factor > 1:
+                raise ValueError("minimize_factor debe estar en el rango (0, 1]")
             self.minimize(minimize_factor)
 
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
@@ -45,7 +47,13 @@ class TokenizedDataset:
         return tk
     
     def train_test_split(self, test_size, seed):
-        print('se divide el dataset en train y test')
+        """
+        Divide el dataset en conjunto de entrenamiento y prueba.
+        
+        :param test_size: Tamaño del conjunto de prueba. Rango (0, 1)
+        :param seed: Semilla para la división aleatoria
+        """
+        print("[Tokenizer]: Se divide el dataset en 'train' y 'test'")
         train_test = self.dataset['train'].train_test_split(test_size=test_size, seed=seed)
         self.dataset = DatasetDict({
             'train': train_test['train'],
@@ -55,7 +63,8 @@ class TokenizedDataset:
     def minimize(self, factor):
         """
         Minimiza el dataset para pruebas rápidas.
-        @param factor: factor de minimización
+
+        :param factor: factor de minimización
         """
         for split in self.dataset.keys():
             self.dataset[split] = self.dataset[split].shuffle(seed=SEED).select(range(int(len(self.dataset[split]) * factor)))
@@ -63,8 +72,9 @@ class TokenizedDataset:
     def label(self, tk, examples):
         """
         Etiqueta los ejemplos tokenizados.
-        @param tk: tokenizaciones
-        @param examples: ejemplos originales
+
+        :param tk: tokenizaciones
+        :param examples: ejemplos originales
         """
         raise NotImplementedError("Subclase debe implementar el método label()")
 
