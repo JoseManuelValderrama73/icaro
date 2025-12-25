@@ -1,5 +1,8 @@
 datasets/
 training/
+modelos/
+logs/
+tokenizers/
 yelp_review_classifier/
 bin/
 include/
