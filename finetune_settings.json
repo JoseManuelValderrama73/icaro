@@ -1,0 +1,7 @@
+{
+    "model": "microsoft/deberta-base",
+    "dataset": "formai",
+    "test_size": 0.2,
+    "num_epochs": 1,
+    "batch_size": 5
+}

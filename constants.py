@@ -1,22 +1,14 @@
-"""
-"microsoft/deberta-base"
-"google-bert/bert-base-cased"
-"""
-MODEL = 'microsoft/deberta-base'
-
-"""
-castle
-draper
-formai
-"""
-DATASET = 'formai'
-TEST_SIZE = 0.2
 # TODO: que la semilla sea algo diferente
 SEED = 42
 
-TRAINING_OUTPUT_DIR = f"training/{MODEL.split('/')[-1]}/{DATASET}"
-MODEL_SAVE_PATH = f"modelos/{MODEL.split('/')[-1]}-{DATASET}"
-TOKENIZER_SAVE_PATH = f"tokenizers/{MODEL.split('/')[-1]}-{DATASET}"
+def load_settings(file: str):
+    import json
+    with open(file, 'r') as file:
+        settings = json.load(file)
+    return settings
 
-BATCH_SIZE = 5
-EPOCHS = 1
+def model_save_path(model, dataset):
+    return f"modelos/{model.split('/')[-1]}-{dataset}"
+def tokenizer_save_path(model, dataset):
+    return f"tokenizers/{model.split('/')[-1]}-{dataset}"
+

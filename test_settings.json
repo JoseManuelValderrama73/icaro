@@ -1,0 +1,7 @@
+{
+    "model": "microsoft/deberta-base",
+    "dataset": "formai",
+    "vulnerable_code": "void vulnerable_func(char *str) {char buffer[10];strcpy(buffer, str);}",
+    "_comment": "suma dos numeros",
+    "safe_code": "#include <stdio.h>int main() {int a = 15;int b = 30;int suma = a + b;printf(\"La suma de %d y %d es: %d\n\", a, b, suma);return 0;}"
+}
