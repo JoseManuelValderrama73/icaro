@@ -32,7 +32,7 @@ class TokenizedDataset:
             padding="max_length",
             truncation=True,
             max_length=max_length,
-            return_tensors=None  # Let Trainer handle tensor conversion
+            return_tensors='pt'  # Let Trainer handle tensor conversion
         )
         """ TODO:
         cambiar max_length hasta 786 (max de deberta) o
@@ -77,6 +77,9 @@ class TokenizedDataset:
         :param examples: ejemplos originales
         """
         raise NotImplementedError("Subclase debe implementar el método label()")
+
+    def tokenizer(self):
+        return self.tokenizer
 
     def __getitem__(self, idx):
         return self.dataset[idx]
