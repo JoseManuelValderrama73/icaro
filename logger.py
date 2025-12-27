@@ -24,18 +24,16 @@ class ExecutionLogger:
                     execution_YYYYMMDD_HHMMSS.log
     """
     
-    def __init__(self, execution_type: str, model: str, dataset: str, settings: dict):
+    def __init__(self, execution_type: str, settings: dict):
         """
         Inicializa el logger para una ejecución.
         
         :param execution_type: Tipo de ejecución ('finetuning' o 'testing')
-        :param model: Nombre del modelo
-        :param dataset: Nombre del dataset
         :param settings: Configuración utilizada para la ejecución
         """
         self.execution_type = execution_type
-        self.model = model.split('/')[-1]  # Obtener solo el nombre del modelo
-        self.dataset = dataset
+        self.model = settings['model'].split('/')[-1]  # Obtener solo el nombre del modelo
+        self.dataset = settings['dataset']
         self.settings = settings
         
         # Generar timestamp para el nombre del archivo

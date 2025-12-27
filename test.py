@@ -19,25 +19,21 @@ if __name__ == "__main__":
     settings = load_settings('test_settings.json')
     
     # Inicializar logger
-    logger = ExecutionLogger('testing', settings["model"], settings["dataset"], settings)
+    logger = ExecutionLogger('testing', settings)
     logger.log_step("test.py", "Testing execution")
     
     try:
         model = model_save_path(settings["model"], settings["dataset"])
         tokenizer = tokenizer_save_path(settings["model"], settings["dataset"])
-        
         logger.log("test.py", f"Model path: {model}")
         logger.log("test.py", f"Tokenizer path: {tokenizer}")
         
-        logger.log("test.py", "Checking directories")
         check_dirs(model, tokenizer)
         logger.log_step("test.py", "Directories verified", "COMPLETED")
 
-        logger.log("test.py", "Loading classification pipeline")
         classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
         logger.log_step("test.py", "Pipeline loaded", "COMPLETED")
 
-        logger.log("test.py", "Running classification on test code")
         result = classifier(settings["code"])
         logger.log("test.py", f"Classification result: {result}")
         

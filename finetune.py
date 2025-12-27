@@ -73,15 +73,13 @@ if __name__ == "__main__":
     settings = load_settings('finetune_settings.json')
     
     # Inicializar logger
-    logger = ExecutionLogger('finetuning', settings["model"], settings["dataset"], settings)
+    logger = ExecutionLogger('finetuning', settings)
     logger.log_step("finetune.py", "Finetuning execution")
     
     try:
-        logger.log("finetune.py", "Loading model")
         model = get_model(settings)
         logger.log_step("finetune.py", "Model loaded", "COMPLETED")
         
-        logger.log("finetune.py", "Loading dataset")
         dataset = get_dataset(settings)
         logger.log_step("finetune.py", "Dataset loaded", "COMPLETED")
         
@@ -93,15 +91,12 @@ if __name__ == "__main__":
         metric = evaluate.load("accuracy")
         logger.log("finetune.py", "Accuracy metric loaded")
 
-        logger.log_step("finetune.py", "Training process")
         trainer = train(model, dataset)
         logger.log_step("finetune.py", "Training process", "COMPLETED")
 
-        logger.log("finetune.py", "Saving model")
         trainer.save_model(model_save_path)
         logger.log_step("finetune.py", "Model saved", "COMPLETED")
         
-        logger.log("finetune.py", "Saving tokenizer")
         dataset.tokenizer.save_pretrained(tokenizer_save_path)
         logger.log_step("finetune.py", "Tokenizer saved", "COMPLETED")
 
