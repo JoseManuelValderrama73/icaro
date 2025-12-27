@@ -11,16 +11,41 @@ if __name__ == "__main__":
     from tokenizer import *
     from huggingface_hub import HfFolder, login
     from transformers import pipeline
+    from logger import ExecutionLogger
 
     if HfFolder.get_token() is None:
         login()
 
     settings = load_settings('test_settings.json')
+    
+    # Inicializar logger
+    logger = ExecutionLogger('testing', settings["model"], settings["dataset"], settings)
+    logger.log_step("test.py", "Testing execution")
+    
+    try:
+        model = model_save_path(settings["model"], settings["dataset"])
+        tokenizer = tokenizer_save_path(settings["model"], settings["dataset"])
+        
+        logger.log("test.py", f"Model path: {model}")
+        logger.log("test.py", f"Tokenizer path: {tokenizer}")
+        
+        logger.log("test.py", "Checking directories")
+        check_dirs(model, tokenizer)
+        logger.log_step("test.py", "Directories verified", "COMPLETED")
 
-    model = model_save_path(settings["model"], settings["dataset"])
-    tokenizer = tokenizer_save_path(settings["model"], settings["dataset"])
-    check_dirs(model, tokenizer)
+        logger.log("test.py", "Loading classification pipeline")
+        classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
+        logger.log_step("test.py", "Pipeline loaded", "COMPLETED")
 
-    classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
-
-    print(classifier(settings["safe_code"]))
+        logger.log("test.py", "Running classification on test code")
+        result = classifier(settings["code"])
+        logger.log("test.py", f"Classification result: {result}")
+        
+        print(result)
+        
+        logger.finalize("test.py", "SUCCESS")
+        
+    except Exception as e:
+        logger.log_error("test.py", e)
+        logger.finalize("test.py", "FAILED")
+        raise

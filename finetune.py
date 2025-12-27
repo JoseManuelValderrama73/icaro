@@ -44,7 +44,7 @@ def train(model, dataset):
         per_device_eval_batch_size=settings["batch_size"],
         num_train_epochs=settings["num_epochs"],
         # logs
-        logging_dir='./logs',
+        logging_dir=TRAINING_LOGGING_DIR,
         logging_steps=10,
         report_to="tensorboard",
         #load_best_model_at_end=True,
@@ -65,20 +65,51 @@ if __name__ == "__main__":
     import evaluate
     from constants import *
     from huggingface_hub import HfFolder, login
+    from logger import ExecutionLogger
 
     if HfFolder.get_token() is None:
         login()
+    
     settings = load_settings('finetune_settings.json')
-    model = get_model(settings)
-    dataset = get_dataset(settings)
-    model_save_path = model_save_path(settings["model"], settings["dataset"])
-    tokenizer_save_path = tokenizer_save_path(settings["model"], settings["dataset"])
+    
+    # Inicializar logger
+    logger = ExecutionLogger('finetuning', settings["model"], settings["dataset"], settings)
+    logger.log_step("finetune.py", "Finetuning execution")
+    
+    try:
+        logger.log("finetune.py", "Loading model")
+        model = get_model(settings)
+        logger.log_step("finetune.py", "Model loaded", "COMPLETED")
+        
+        logger.log("finetune.py", "Loading dataset")
+        dataset = get_dataset(settings)
+        logger.log_step("finetune.py", "Dataset loaded", "COMPLETED")
+        
+        model_save_path = model_save_path(settings["model"], settings["dataset"])
+        tokenizer_save_path = tokenizer_save_path(settings["model"], settings["dataset"])
+        logger.log("finetune.py", f"Model will be saved to: {model_save_path}")
+        logger.log("finetune.py", f"Tokenizer will be saved to: {tokenizer_save_path}")
 
-    metric = evaluate.load("accuracy")
+        metric = evaluate.load("accuracy")
+        logger.log("finetune.py", "Accuracy metric loaded")
 
-    trainer = train(model, dataset)
+        logger.log_step("finetune.py", "Training process")
+        trainer = train(model, dataset)
+        logger.log_step("finetune.py", "Training process", "COMPLETED")
 
-    trainer.save_model(model_save_path)
-    dataset.tokenizer.save_pretrained(tokenizer_save_path)
+        logger.log("finetune.py", "Saving model")
+        trainer.save_model(model_save_path)
+        logger.log_step("finetune.py", "Model saved", "COMPLETED")
+        
+        logger.log("finetune.py", "Saving tokenizer")
+        dataset.tokenizer.save_pretrained(tokenizer_save_path)
+        logger.log_step("finetune.py", "Tokenizer saved", "COMPLETED")
 
-    print(f"Modelo guardado exitosamente en {model_save_path}\nTokenizador guardado exitosamente en {tokenizer_save_path}")
+        print(f"Modelo guardado exitosamente en {model_save_path}\nTokenizador guardado exitosamente en {tokenizer_save_path}")
+        
+        logger.finalize("finetune.py", "SUCCESS")
+        
+    except Exception as e:
+        logger.log_error("finetune.py", e)
+        logger.finalize("finetune.py", "FAILED")
+        raise

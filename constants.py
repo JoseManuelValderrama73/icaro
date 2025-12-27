@@ -1,4 +1,3 @@
-
 def get_seed(settings: dict) -> int:
     """
     Obtiene una semilla para la aleatoriedad. Si 'seed' está presente en settings, se utiliza ese valor.
@@ -18,6 +17,8 @@ def get_seed(settings: dict) -> int:
     print(f"Generated seed: {seed} (timestamp: {timestamp})")
     return seed
 
+TRAINING_LOGGING_DIR = "logs/training/"
+
 def load_settings(file: str):
     import json
     with open(file, 'r') as file:
@@ -30,4 +31,8 @@ def model_save_path(model, dataset):
     return f"modelos/{model.split('/')[-1]}/{dataset}"
 def tokenizer_save_path(model, dataset):
     return f"tokenizers/{model.split('/')[-1]}/{dataset}"
+def finetuning_log_path(model, dataset):
+    return f"logs/finetuning/{model.split('/')[-1]}/{dataset}"
+def testing_log_path(model, dataset):
+    return f"logs/testing/{model.split('/')[-1]}/{dataset}"
 
