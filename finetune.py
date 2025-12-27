@@ -1,15 +1,9 @@
-def training_output_dir(model, dataset):
-    return f"training/{model.split('/')[-1]}/{dataset}"
-
 def get_model(settings):
     from transformers import AutoModelForSequenceClassification
 
     id2label = {0: "SAFE", 1: "VULNERABLE"}
     label2id = {"SAFE": 0, "VULNERABLE": 1}
-    """
-    "microsoft/deberta-base"
-    "google-bert/bert-base-cased"
-    """
+
     return AutoModelForSequenceClassification.from_pretrained(
         settings["model"], 
         num_labels=2,
@@ -19,17 +13,12 @@ def get_model(settings):
 def get_dataset(settings):
     import tokenizer
 
-    """
-    castle
-    draper
-    formai
-    """
     if settings["dataset"] == 'castle':
-            dataset = tokenizer.TokenizedCastle(tokenizer_id=settings["model"])
+            dataset = tokenizer.TokenizedCastle(settings)
     elif settings["dataset"] == 'draper':
-            dataset = tokenizer.TokenizedDraper(tokenizer_id=settings["model"])
+            dataset = tokenizer.TokenizedDraper(settings)
     elif settings["dataset"] == 'formai':
-            dataset = tokenizer.TokenizedFormAI(tokenizer_id=settings["model"], minimize_factor=.01)
+            dataset = tokenizer.TokenizedFormAI(settings)
     else:
         raise ValueError("Dataset invalido")
     
@@ -41,6 +30,7 @@ def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)
+
 def train(model, dataset):
     from transformers import Trainer, TrainingArguments
 
@@ -81,12 +71,14 @@ if __name__ == "__main__":
     settings = load_settings('finetune_settings.json')
     model = get_model(settings)
     dataset = get_dataset(settings)
+    model_save_path = model_save_path(settings["model"], settings["dataset"])
+    tokenizer_save_path = tokenizer_save_path(settings["model"], settings["dataset"])
 
     metric = evaluate.load("accuracy")
 
     trainer = train(model, dataset)
 
-    trainer.save_model(model_save_path(settings["model"], settings["dataset"]))
-    dataset.tokenizer.save_pretrained(tokenizer_save_path(settings["model"], settings["dataset"]))
+    trainer.save_model(model_save_path)
+    dataset.tokenizer.save_pretrained(tokenizer_save_path)
 
-    print(f"Modelo guardado exitosamente")
+    print(f"Modelo guardado exitosamente en {model_save_path}\nTokenizador guardado exitosamente en {tokenizer_save_path}")

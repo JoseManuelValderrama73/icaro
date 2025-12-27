@@ -4,17 +4,19 @@ from datasets import load_dataset
 from constants import *
 
 class TokenizedDataset:
-    def __init__(self, tokenizer_id: str, dataset, code_snippet, minimize_factor):
+    def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str):
         self.dataset = dataset
-        if minimize_factor:
-            if minimize_factor <= 0 or minimize_factor > 1:
-                raise ValueError("minimize_factor debe estar en el rango (0, 1]")
+        self.seed = get_seed(settings)
+        minimize_factor = settings['minimize_factor']
+        if minimize_factor <= 0 or minimize_factor > 1:
+            raise ValueError("minimize_factor debe estar en el rango (0, 1]")
+        if minimize_factor != 1:
             self.minimize(minimize_factor)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+        self.tokenizer = AutoTokenizer.from_pretrained(settings["model"])
 
         if 'train' not in self.dataset or 'test' not in self.dataset:
-            self.train_test_split(TEST_SIZE, SEED)
+            self.train_test_split(settings["test_size"])
             
         self.code_snippet = code_snippet
         self.dataset = self.dataset.map(self.tokenize, batched=True, remove_columns=self.dataset['train'].column_names)
@@ -46,7 +48,7 @@ class TokenizedDataset:
         self.label(tk, examples)
         return tk
     
-    def train_test_split(self, test_size, seed):
+    def train_test_split(self, test_size):
         """
         Divide el dataset en conjunto de entrenamiento y prueba.
         
@@ -54,7 +56,7 @@ class TokenizedDataset:
         :param seed: Semilla para la división aleatoria
         """
         print("[Tokenizer]: Se divide el dataset en 'train' y 'test'")
-        train_test = self.dataset['train'].train_test_split(test_size=test_size, seed=seed)
+        train_test = self.dataset['train'].train_test_split(test_size=test_size, seed=self.seed)
         self.dataset = DatasetDict({
             'train': train_test['train'],
             'test': train_test['test']
@@ -67,7 +69,7 @@ class TokenizedDataset:
         :param factor: factor de minimización
         """
         for split in self.dataset.keys():
-            self.dataset[split] = self.dataset[split].shuffle(seed=SEED).select(range(int(len(self.dataset[split]) * factor)))
+            self.dataset[split] = self.dataset[split].shuffle(seed=self.seed).select(range(int(len(self.dataset[split]) * factor)))
 
     def label(self, tk, examples):
         """
@@ -86,19 +88,19 @@ class TokenizedDataset:
 
 
 class TokenizedCastle(TokenizedDataset):
-    def __init__(self, tokenizer_id: str, minimize_factor=None):
+    def __init__(self, settings: dict):
         dataset = load_dataset('json', data_files='datasets/CASTLE-C250.json', field='tests')
-        super().__init__(tokenizer_id, dataset, 'code', minimize_factor=minimize_factor)
+        super().__init__(settings, dataset, 'code')
 
     def label(self, tk, examples):
         # convierto de True y False a 1 y 0
         tk['labels'] = [int(v) for v in examples['vulnerable']]
 
 class TokenizedDraper(TokenizedDataset):
-    def __init__(self, tokenizer_id: str, minimize_factor=None):
+    def __init__(self, settings: dict):
         self.code_snippet = 'functionSource'
         dataset = load_dataset("Joshfcooper/formai-v2-full")
-        super().__init__(tokenizer_id, dataset, self.code_snippet, minimize_factor=minimize_factor)
+        super().__init__(settings, dataset, self.code_snippet)
 
     def label(self, tk, examples):
         tk['labels'] = []
@@ -109,13 +111,11 @@ class TokenizedDraper(TokenizedDataset):
             )
             tk['labels'].append(1 if has_vulnerability else 0)
     
-
 class TokenizedFormAI(TokenizedDataset):
-    def __init__(self, tokenizer_id: str, minimize_factor=None):
-        self.code_snippet = "source_code"
+    def __init__(self, settings: dict):
         self.dataset = load_dataset("Joshfcooper/formai-v2-full")
         self.cleanup()
-        super().__init__(tokenizer_id, self.dataset, self.code_snippet, minimize_factor=minimize_factor)
+        super().__init__(settings, self.dataset, 'source_code')
 
     def label(self, tk, examples):
         tk['labels'] = [0 if line == -1 else 1 for line in examples['vulnerable_line']]
@@ -123,4 +123,3 @@ class TokenizedFormAI(TokenizedDataset):
     def cleanup(self):
         """ remove every row where 'verification_finished' is False """
         self.dataset = self.dataset.filter(lambda example: example['verification_finished'] == 'yes')
-        
