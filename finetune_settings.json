@@ -1,8 +1,8 @@
 {
     "model": "microsoft/deberta-base",
-    "dataset": "castle",
+    "dataset": "formai",
     "_comment": "1 para no minimizar, entre 0 y 1 para minimizar",
-    "minimize_factor": 1,
+    "minimize_factor": 0.01,
     "test_size": 0.2,
     "num_epochs": 1,
     "batch_size": 5,

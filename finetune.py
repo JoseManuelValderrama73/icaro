@@ -10,15 +10,15 @@ def get_model(settings):
         id2label=id2label,
         label2id=label2id
     )
-def get_dataset(settings):
+def get_dataset(settings, logger):
     import tokenizer
 
     if settings["dataset"] == 'castle':
-            dataset = tokenizer.TokenizedCastle(settings)
+            dataset = tokenizer.TokenizedCastle(settings, logger)
     elif settings["dataset"] == 'draper':
-            dataset = tokenizer.TokenizedDraper(settings)
+            dataset = tokenizer.TokenizedDraper(settings, logger)
     elif settings["dataset"] == 'formai':
-            dataset = tokenizer.TokenizedFormAI(settings)
+            dataset = tokenizer.TokenizedFormAI(settings, logger)
     else:
         raise ValueError("Dataset invalido")
     
@@ -80,7 +80,7 @@ if __name__ == "__main__":
         model = get_model(settings)
         logger.log_step("finetune.py", "Model loaded", "COMPLETED")
         
-        dataset = get_dataset(settings)
+        dataset = get_dataset(settings, logger)
         logger.log_step("finetune.py", "Dataset loaded", "COMPLETED")
         
         model_save_path = model_save_path(settings["model"], settings["dataset"])
