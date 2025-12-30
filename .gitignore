@@ -3,6 +3,8 @@ codigo/
 training/
 modelos/
 logs/
+launch_logs/
+slurm_launcher.sh
 tokenizers/
 yelp_review_classifier/
 bin/
