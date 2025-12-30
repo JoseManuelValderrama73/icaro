@@ -1,0 +1,46 @@
+#!/bin/bash
+#SBATCH --job-name=clasificacion_c
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+##SBATCH --gres=gpu:1
+##SBATCH --nodelist=nodo04,nodo05,nodo06
+#SBATCH --gres=gpu:rtx:1
+#SBATCH --exclude=nodo03
+#SBATCH	--chdir=/mnt/beegfs/jmvs0008/icaro
+#SBATCH --output=launch_logs/%A_clasificacion.out
+#SBATCH --error=launch_logs/%A_clasificacion.err
+
+set -euo pipefail
+
+mkdir -p logs
+
+echo "JobID: ${SLURM_JOB_ID}"
+echo "Node:  ${SLURM_NODELIST}"
+echo "CWD:   $(pwd)"
+echo "Date:  $(date)"
+
+module purge
+spack load miniconda3
+spack load cuda@12.1.1
+
+ENV_DIR=/scratch/$USER/conda_envs/clasificacion_c
+
+eval "$(conda shell.bash hook)"
+
+if [ ! -d "$ENV_DIR" ]; then
+    echo "Creando entorno conda en $ENV_DIR"
+    conda create -y -p "$ENV_DIR" python=3.9
+    conda activate "$ENV_DIR"
+    pip install --upgrade pip
+    pip install -r requirements.txt
+else
+    echo "Usando entorno conda existente en $ENV_DIR"
+    conda activate "$ENV_DIR"
+fi
+
+echo "Entrenando..."
+python train.py
+echo "Finaliado"
