@@ -7,7 +7,7 @@ from logger import ExecutionLogger
 class TokenizedDataset:
     def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str, logger: ExecutionLogger):
         self.dataset = dataset
-        self.seed = get_seed(settings)
+        self.seed = get_seed(settings, logger)
 
         minimize_factor = settings['minimize_factor']
         if minimize_factor <= 0 or minimize_factor > 1:
