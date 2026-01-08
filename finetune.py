@@ -67,9 +67,14 @@ if __name__ == "__main__":
     from huggingface_hub import HfFolder, login
     from logger import ExecutionLogger
 
-    if HfFolder.get_token() is None:
-        login()
     
+    if HfFolder.get_token() is None:
+        # login()
+        raise RuntimeError(
+            "No se encontró token de Hugging Face. "
+            "Ejecuta `huggingface-cli login` en el nodo login."
+        )
+
     settings = load_settings('finetune_settings.json')
     
     # Inicializar logger
