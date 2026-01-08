@@ -1,6 +1,6 @@
 {
     "model": "deberta-base",
-    "model_path": "/Users/jmvs/.cache/huggingface/hub/deberta-base",
+    "model_path": "pretrained_models/deberta-base",
     "dataset": "castle",
     "dataset_path": "datasets/CASTLE-C250.json",
     "_comment:minimize_factor": "1 para no minimizar, entre 0 y 1 para minimizar",

@@ -132,6 +132,7 @@ class TokenizedDataset:
 class TokenizedCastle(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
         dataset = load_dataset('json', data_files=settings['dataset_path'], field='tests')
+        print(dataset)
         super().__init__(settings, dataset, 'code', logger)
 
     def get_label(self, example):
