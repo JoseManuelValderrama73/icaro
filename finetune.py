@@ -44,7 +44,7 @@ def train(model, dataset):
         per_device_eval_batch_size=settings["batch_size"],
         num_train_epochs=settings["num_epochs"],
         # logs
-        logging_dir=TRAINING_LOGGING_DIR,
+        logging_dir=TRAINING_LOG_PATH,
         logging_steps=10,
         report_to="tensorboard",
         #load_best_model_at_end=True,

@@ -22,7 +22,6 @@ def get_seed(settings: dict, logger: ExecutionLogger) -> int:
     logger.log_step("get_seed", f"Generated seed: {seed} (timestamp: {timestamp})", "COMPLETED")
     return seed
 
-TRAINING_LOGGING_DIR = "logs/training/"
 
 def load_settings(file: str):
     import json
@@ -32,10 +31,13 @@ def load_settings(file: str):
 
 def training_output_dir(model, dataset):
     return f"training/{model.split('/')[-1]}/{dataset}"
+
 def model_save_path(model, dataset):
     return f"modelos/{model.split('/')[-1]}/{dataset}"
 def tokenizer_save_path(model, dataset):
     return f"tokenizers/{model.split('/')[-1]}/{dataset}"
+
+TRAINING_LOG_PATH = "logs/training/"
 def finetuning_log_path(model, dataset):
     return f"logs/finetuning/{model.split('/')[-1]}/{dataset}"
 def testing_log_path(model, dataset):
