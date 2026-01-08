@@ -18,7 +18,7 @@ class TokenizedDataset:
             self.minimize(minimize_factor)
             logger.log_step("TokenizedDataset", f"Dataset minimized by factor {minimize_factor}", "COMPLETED")
 
-        self.tokenizer = AutoTokenizer.from_pretrained(settings["model"], local_files_only=settings["local"])
+        self.tokenizer = AutoTokenizer.from_pretrained(settings["model_path"], local_files_only=True)
         logger.log_step("TokenizedDataset", f"Tokenizer {settings['model']} loaded", "COMPLETED")
 
         if 'train' not in self.dataset or 'test' not in self.dataset:
@@ -131,7 +131,7 @@ class TokenizedDataset:
 
 class TokenizedCastle(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
-        dataset = load_dataset('json', data_files='datasets/CASTLE-C250.json', field='tests')
+        dataset = load_dataset('json', data_files=settings['dataset_path'], field='tests')
         super().__init__(settings, dataset, 'code', logger)
 
     def get_label(self, example):
@@ -144,10 +144,7 @@ class TokenizedCastle(TokenizedDataset):
 class TokenizedDraper(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
         self.code_snippet = 'functionSource'
-        if settings["local"] == False:
-            dataset = load_dataset("Joshfcooper/formai-v2-full")
-        else:
-            raise NotImplementedError("Dataset Draper no disponible localmente")
+        dataset = load_dataset(settings["dataset_path"])
         super().__init__(settings, dataset, self.code_snippet, logger)
 
     def get_label(self, example):
@@ -167,7 +164,7 @@ class TokenizedDraper(TokenizedDataset):
     
 class TokenizedFormAI(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
-        self.dataset = load_dataset("Joshfcooper/formai-v2-full")
+        self.dataset = load_dataset(settings["dataset_path"])
         self.cleanup()
         super().__init__(settings, self.dataset, 'source_code', logger)
 

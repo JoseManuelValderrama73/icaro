@@ -4,12 +4,16 @@ def get_model(settings):
     id2label = {0: "SAFE", 1: "VULNERABLE"}
     label2id = {"SAFE": 0, "VULNERABLE": 1}
 
+    import os
+    if not os.path.exists(settings["model_path"]):
+        raise ValueError(f"El path del modelo no existe: {settings['model_path']}. Asegúrate de haber descargado el modelo correctamente según las instrucciones en README.")
+
     return AutoModelForSequenceClassification.from_pretrained(
-        settings["model"], 
+        settings["model_path"], 
         num_labels=2,
         id2label=id2label,
         label2id=label2id,
-        local_files_only=settings["local"]
+        local_files_only=True
     )
 def get_dataset(settings, logger):
     import tokenizer
@@ -31,7 +35,6 @@ def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     
-    # Manual accuracy calculation
     accuracy = (predictions == labels).mean()
     return {"accuracy": accuracy}
 
@@ -66,18 +69,9 @@ def train(model, dataset):
 
 
 if __name__ == "__main__":
-    import evaluate
     from constants import *
-    from huggingface_hub import HfFolder, login
     from logger import ExecutionLogger
 
-    '''
-    if HfFolder.get_token() is None:
-        raise RuntimeError(
-            "No se encontró token de Hugging Face. "
-            "Ejecuta `huggingface-cli login` en el nodo login."
-        )
-    '''
     settings = load_settings('finetune_settings.json')
     
     # Inicializar logger
@@ -95,9 +89,6 @@ if __name__ == "__main__":
         tokenizer_save_path = tokenizer_save_path(settings["model"], settings["dataset"])
         logger.log("finetune.py", f"Model will be saved to: {model_save_path}")
         logger.log("finetune.py", f"Tokenizer will be saved to: {tokenizer_save_path}")
-
-        #metric = evaluate.load("accuracy")
-        #logger.log("finetune.py", "Accuracy metric loaded")
 
         trainer = train(model, dataset)
         logger.log_step("finetune.py", "Training process", "COMPLETED")

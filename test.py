@@ -31,15 +31,9 @@ def get_code(file_path: str) -> str:
 if __name__ == "__main__":
     from constants import *
     from tokenizer import *
-    from huggingface_hub import HfFolder, login
     from transformers import pipeline
     from logger import ExecutionLogger
 
-    if HfFolder.get_token() is None:
-        raise RuntimeError(
-            "No se encontró token de Hugging Face. "
-            "Ejecuta `huggingface-cli login` en el nodo login."
-        )
 
     settings = load_settings('test_settings.json')
     
