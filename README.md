@@ -6,21 +6,19 @@
 
 `pip install -r requirements.txt` para instalar los paquetes en requirements
 
-## 2. Definir variables de entorno
+## 2. Descargar modelo y dataset
 
 Añadir a .bashrc:
 
-    export HF_HUB_OFFLINE=1
-    export TRANSFORMERS_OFFLINE=1
-    export HF_DATASETS_OFFLINE=1
+    export HF_HUB_OFFLINE=0
+    export TRANSFORMERS_OFFLINE=0
+    export HF_DATASETS_OFFLINE=0
 
 Si quieres cambiar el directorio por defecto añade:
 
     export HF_HOME=directorio deseado
     export TRANSFORMERS_CACHE=$HF_HOME/hub
     export HF_DATASETS_CACHE=$HF_HOME/datasets
-
-## 3. Descargar modelo y dataset
 
 ### Modelos
 
@@ -36,3 +34,11 @@ Si quieres cambiar el directorio por defecto añade:
     formai - Joshfcooper/formai-v2-full
 
 `hf download ds --repo-type dataset --local-dir $HF_HOME/datasets/ds`
+
+## 3. Definir variables de entorno
+
+Cambiar en .bashrc:
+
+    export HF_HUB_OFFLINE=1
+    export TRANSFORMERS_OFFLINE=1
+    export HF_DATASETS_OFFLINE=1
