@@ -30,7 +30,10 @@ def compute_metrics(eval_pred):
 
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
-    return metric.compute(predictions=predictions, references=labels)
+    
+    # Manual accuracy calculation
+    accuracy = (predictions == labels).mean()
+    return {"accuracy": accuracy}
 
 def train(model, dataset):
     from transformers import Trainer, TrainingArguments
@@ -93,8 +96,8 @@ if __name__ == "__main__":
         logger.log("finetune.py", f"Model will be saved to: {model_save_path}")
         logger.log("finetune.py", f"Tokenizer will be saved to: {tokenizer_save_path}")
 
-        metric = evaluate.load("accuracy")
-        logger.log("finetune.py", "Accuracy metric loaded")
+        #metric = evaluate.load("accuracy")
+        #logger.log("finetune.py", "Accuracy metric loaded")
 
         trainer = train(model, dataset)
         logger.log_step("finetune.py", "Training process", "COMPLETED")
