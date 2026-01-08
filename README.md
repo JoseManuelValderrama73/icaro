@@ -18,3 +18,6 @@
     castle
     draper
     formai
+
+hf download microsoft/deberta-base --local-dir $HF_HOME/hub/microsoft_deberta-base
+hf download datasets/imdb --repo-type dataset --local-dir $HF_HOME/datasets/imdb

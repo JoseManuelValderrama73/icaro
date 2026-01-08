@@ -1,7 +1,9 @@
 {
-    "model": "microsoft/deberta-base",
+    "_comment:local": "usar true para lanzarlo en ADA",
+    "local": true,
+    "model": "/mnt/beegfs/jmvs0008/huggingface/hub/microsoft_deberta-base",
     "dataset": "castle",
-    "_comment": "1 para no minimizar, entre 0 y 1 para minimizar",
+    "_comment:minimize_factor": "1 para no minimizar, entre 0 y 1 para minimizar",
     "minimize_factor": 1,
     "test_size": 0.2,
     "num_epochs": 1,

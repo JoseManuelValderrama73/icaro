@@ -18,7 +18,7 @@ class TokenizedDataset:
             self.minimize(minimize_factor)
             logger.log_step("TokenizedDataset", f"Dataset minimized by factor {minimize_factor}", "COMPLETED")
 
-        self.tokenizer = AutoTokenizer.from_pretrained(settings["model"])
+        self.tokenizer = AutoTokenizer.from_pretrained(settings["model"], local_files_only=settings["local"])
         logger.log_step("TokenizedDataset", f"Tokenizer {settings['model']} loaded", "COMPLETED")
 
         if 'train' not in self.dataset or 'test' not in self.dataset:
@@ -144,7 +144,10 @@ class TokenizedCastle(TokenizedDataset):
 class TokenizedDraper(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
         self.code_snippet = 'functionSource'
-        dataset = load_dataset("Joshfcooper/formai-v2-full")
+        if settings["local"] == False:
+            dataset = load_dataset("Joshfcooper/formai-v2-full")
+        else:
+            raise NotImplementedError("Dataset Draper no disponible localmente")
         super().__init__(settings, dataset, self.code_snippet, logger)
 
     def get_label(self, example):

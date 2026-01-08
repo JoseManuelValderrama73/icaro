@@ -8,7 +8,8 @@ def get_model(settings):
         settings["model"], 
         num_labels=2,
         id2label=id2label,
-        label2id=label2id
+        label2id=label2id,
+        local_files_only=settings["local"]
     )
 def get_dataset(settings, logger):
     import tokenizer
@@ -69,7 +70,6 @@ if __name__ == "__main__":
 
     
     if HfFolder.get_token() is None:
-        # login()
         raise RuntimeError(
             "No se encontró token de Hugging Face. "
             "Ejecuta `huggingface-cli login` en el nodo login."
