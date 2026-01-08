@@ -3,6 +3,7 @@ codigo/
 training/
 modelos/
 logs/
+logs_ejecucion/
 launch_logs/
 slurm_launcher.sh
 tokenizers/

@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# =========================
+# Ejemplo básico de Slurm
+# =========================
+# Este script se envía con:
+#   sbatch launcher.sbs
+#
+# Puedes ver el estado con:
+#   squeue
+#
+# Cancelar un job:
+#   scancel <JOBID>
+#
+
+#SBATCH --job-name=clasificacion_c                 # Nombre descriptivo del trabajo (aparece en squeue)
+#SBATCH --partition=normal                   # Cola/partición donde se ejecutará (depende del clúster)
+#SBATCH --nodes=1                            # Nº de nodos (máquinas) solicitados
+#SBATCH --ntasks=1                           # Nº de tareas (para MPI suele ser >1; para Python normal, 1)
+#SBATCH --cpus-per-task=4                    # Hilos/CPU asignadas a esa tarea (útil para dataloaders, BLAS, etc.)
+#SBATCH --mem=32G                            # Memoria RAM total para el job ()
+#SBATCH --gres=gpu:1                         # GPUs solicitadas. Pon gpu:1 si necesitas 1 GPU
+#SBATCH --nodelist=nodo04,nodo05,nodo06                    # (Opcional) Fijar un nodo concreto (nodo01, nodo02 -> Tesla V100 32Gb; nodo03, nodo04, nodo05, nodo06 -> RTX 2080Ti 11Gb; nodo07 -> A100 40Gb)
+#SBATCH	--chdir="/mnt/beegfs/jmvs0008/icaro"
+#SBATCH --output="logs_ejecucion/%A_clasificacion_c.out"     # STDOUT (%A = JobID)
+#SBATCH --error="logs_ejecucion/%A_clasificacion_c.err"      # STDERR (%A = JobID)
+
+# Recomendación: aborta si hay errores y evita variables no definidas
+set -euo pipefail
+
+# Crea carpeta de logs antes de que el job intente escribir (por si --chdir no existiera o no tiene logs)
+mkdir -p logs_ejecucion
+
+# (Opcional) Imprime info útil para depurar
+echo "JobID: ${SLURM_JOB_ID}"
+echo "Node:  ${SLURM_NODELIST}"
+echo "CWD:   $(pwd)"
+echo "Date:  $(date)"
+
+# Limpia módulos previos
+module purge
+
+# Carga dependencias.
+spack load miniconda3
+spack load cuda@12.1.1 
+
+# Activa el entorno de conda
+# Nota: en algunos clústeres hace falta inicializar conda con:
+#   source "$(conda info --base)/etc/profile.d/conda.sh"
+# Aquí lo dejamos simple.
+echo "Activando entorno conda 'jmvs'"
+source activate jmvs
+
+# Ejecuta el script principal
+echo "Ejecutando finetune.py"
+python finetune.py
+echo "Finalizado finetune.py"
