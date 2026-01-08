@@ -40,18 +40,20 @@ echo "Date:  $(date)"
 # Limpia módulos previos
 module purge
 
-# Carga dependencias.
+# Carga miniconda
 spack load miniconda3
-spack load cuda@12.1.1 
+spack load cuda@12.1.1
 
-# Activa el entorno de conda
-# Nota: en algunos clústeres hace falta inicializar conda con:
-#   source "$(conda info --base)/etc/profile.d/conda.sh"
-# Aquí lo dejamos simple.
-echo "Activando entorno conda 'jmvs'"
-source activate jmvs
+# Inicializa conda PARA SLURM
+eval "$(conda shell.bash hook)"
 
-# Ejecuta el script principal
-echo "Ejecutando finetune.py"
+# Activa el entorno correcto
+conda activate jmvs
+
+# Verificación (muy recomendable)
+which python
+python --version
+pip show evaluate
+
+# Ejecuta
 python finetune.py
-echo "Finalizado finetune.py"
