@@ -1,5 +1,6 @@
 training/
 modelos/
+pretrained_models/
 logs/
 logs_ejecucion/
 launch_logs/
