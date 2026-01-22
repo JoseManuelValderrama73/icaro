@@ -50,10 +50,5 @@ eval "$(conda shell.bash hook)"
 # Activa el entorno correcto
 conda activate jmvs
 
-# Verificación (muy recomendable)
-which python
-python --version
-pip show evaluate
-
 # Ejecuta
 python finetune.py
