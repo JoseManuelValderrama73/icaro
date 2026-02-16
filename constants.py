@@ -10,7 +10,7 @@ def get_seed(settings: dict, logger: ExecutionLogger) -> int:
     :param logger: Logger para registrar los pasos
     """
     if 'seed' in settings:
-        logger.log_step("get_seed", f"Generated seed: {settings['seed']} (from settings)", "COMPLETED")
+        if logger: logger.log_step("get_seed", f"Generated seed: {settings['seed']} (from settings)", "COMPLETED")
         return settings['seed']
     
     import hashlib
@@ -19,7 +19,7 @@ def get_seed(settings: dict, logger: ExecutionLogger) -> int:
     timestamp = datetime.now().isoformat()
     hash_object = hashlib.md5(timestamp.encode())
     seed = int(hash_object.hexdigest()[:8], 16)
-    logger.log_step("get_seed", f"Generated seed: {seed} (timestamp: {timestamp})", "COMPLETED")
+    if logger: logger.log_step("get_seed", f"Generated seed: {seed} (timestamp: {timestamp})", "COMPLETED")
     return seed
 
 

@@ -24,6 +24,8 @@ def get_dataset(settings, logger):
             dataset = tokenizer.TokenizedDraper(settings, logger)
     elif settings["dataset"] == 'formai':
             dataset = tokenizer.TokenizedFormAI(settings, logger)
+    elif settings["dataset"] == 'bigvul':
+            dataset = tokenizer.TokenizedBigVul(settings, logger)
     else:
         raise ValueError("Dataset invalido")
     
