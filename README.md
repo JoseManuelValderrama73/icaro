@@ -32,8 +32,9 @@ Si quieres cambiar el directorio por defecto añade:
     castle
     draper - claudios/Draper
     formai - Joshfcooper/formai-v2-full
+    bigvul - bstee615/bigvul
 
-`hf download ds --repo-type dataset --local-dir $HF_HOME/datasets/ds`
+`hf download DS --repo-type dataset --local-dir $HF_HOME/datasets/DS`
 
 ## 3. Definir variables de entorno
 

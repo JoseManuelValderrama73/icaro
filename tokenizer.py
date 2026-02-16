@@ -11,23 +11,23 @@ class TokenizedDataset:
 
         minimize_factor = settings['minimize_factor']
         if minimize_factor <= 0 or minimize_factor > 1:
-            logger.log_error("TokenizedDataset", "minimize_factor debe estar en el rango (0, 1]")
-            logger.finalize("TokenizedDataset", "FAILED")
+            if logger: logger.log_error("TokenizedDataset", "minimize_factor debe estar en el rango (0, 1]")
+            if logger: logger.finalize("TokenizedDataset", "FAILED")
             raise ValueError("minimize_factor debe estar en el rango (0, 1]")
         if minimize_factor != 1:
             self.minimize(minimize_factor)
-            logger.log_step("TokenizedDataset", f"Dataset minimized by factor {minimize_factor}", "COMPLETED")
+            if logger: logger.log_step("TokenizedDataset", f"Dataset minimized by factor {minimize_factor}", "COMPLETED")
 
         self.tokenizer = AutoTokenizer.from_pretrained(settings["model_path"], local_files_only=True)
-        logger.log_step("TokenizedDataset", f"Tokenizer {settings['model']} loaded", "COMPLETED")
+        if logger: logger.log_step("TokenizedDataset", f"Tokenizer {settings['model']} loaded", "COMPLETED")
 
         if 'train' not in self.dataset or 'test' not in self.dataset:
             self.train_test_split(settings["test_size"])
-            logger.log_step("TokenizedDataset", f"Dataset split into train and test with test size {settings['test_size']}", "COMPLETED")
+            if logger: logger.log_step("TokenizedDataset", f"Dataset split into train and test with test size {settings['test_size']}", "COMPLETED")
             
         self.code_snippet = code_snippet
         self.dataset = self.dataset.map(self.tokenize, batched=True, remove_columns=self.dataset['train'].column_names)
-        logger.log_step("TokenizedDataset", "Dataset tokenized", "COMPLETED")
+        if logger: logger.log_step("TokenizedDataset", "Dataset tokenized", "COMPLETED")
         '''
         try:
             self.dataset.cleanup_cache_files()
@@ -178,3 +178,43 @@ class TokenizedFormAI(TokenizedDataset):
     def cleanup(self):
         """ Elimina ejemplos no verificados """
         self.dataset = self.dataset.filter(lambda example: example['verification_finished'] == 'yes')
+
+class TokenizedBigVul(TokenizedDataset):
+    def __init__(self, settings: dict, logger: ExecutionLogger):
+        self.dataset = load_dataset(settings["dataset_path"])
+        print(self.dataset)
+        self.transform()
+        print(self.dataset)
+        super().__init__(settings, self.dataset, 'code', logger)
+
+    def transform(self):
+        """ Genera un dataset con los ejemplos vulnerables y sus arreglos aparecen por separado """
+        from datasets import Dataset, concatenate_datasets
+        
+        new_splits = {}
+        
+        for split_name in self.dataset.keys():
+            filtered = self.dataset[split_name].filter(lambda example: example['CWE ID'] != None)
+            
+            vulnerable_data = {
+                'code': filtered['func_before'],
+                'vulnerable': [1] * len(filtered)
+            }
+            vulnerable_dataset = Dataset.from_dict(vulnerable_data)
+            
+            non_vulnerable_data = {
+                'code': filtered['func_after'],
+                'vulnerable': [0] * len(filtered)
+            }
+            non_vulnerable_dataset = Dataset.from_dict(non_vulnerable_data)
+            
+            combined = concatenate_datasets([vulnerable_dataset, non_vulnerable_dataset])
+            new_splits[split_name] = combined
+        
+        self.dataset = DatasetDict(new_splits)
+    
+    def get_label(self, example):
+        return example['vulnerable']
+
+    def label(self, tk, examples):
+        tk['labels'] = [int(v) for v in examples['vulnerable']]

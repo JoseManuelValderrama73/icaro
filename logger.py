@@ -37,7 +37,7 @@ class ExecutionLogger:
         self.settings = settings
         
         # Generar timestamp para el nombre del archivo
-        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.timestamp = datetime.now().strftime("%d.%m.%Y_%H.%M.%S")
         
         # Crear la ruta del archivo de log
         self.log_dir = self._get_log_dir()
