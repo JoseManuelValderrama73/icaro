@@ -15,9 +15,9 @@ def get_model(settings):
     id2label = {0: "SAFE", 1: "VULNERABLE"}
     label2id = {"SAFE": 0, "VULNERABLE": 1}
 
-    import os
-    if not os.path.exists(settings["model_path"]):
-        raise ValueError(f"El path del modelo no existe: {settings['model_path']}. Asegúrate de haber descargado el modelo correctamente según las instrucciones en README.")
+    #import os
+    #if not os.path.exists(settings["model_path"]):
+    #    raise ValueError(f"El path del modelo no existe: {settings['model_path']}. Asegúrate de haber descargado el modelo correctamente según las instrucciones en README.")
 
     return AutoModelForSequenceClassification.from_pretrained(
         settings["model_path"], 
@@ -63,7 +63,9 @@ def train(model, dataset):
         per_device_train_batch_size=settings["batch_size"],
         per_device_eval_batch_size=settings["batch_size"],
         #gradient_accumulation_steps=settings["gradient_accumulation_steps"],
+        #gradient_accumulation_steps=settings["gradient_accumulation_steps"],
         num_train_epochs=settings["num_epochs"],
+        greater_is_better=True,
         greater_is_better=True,
         # logs
         logging_dir=TRAINING_LOG_PATH,
@@ -76,6 +78,9 @@ def train(model, dataset):
         train_dataset=dataset['train'],
         eval_dataset=dataset['test'],
         compute_metrics=compute_metrics,
+        processing_class=dataset.tokenizer,
+        #data_collator=data_collator,
+        callbacks=[EarlyStoppingCallback()],
         processing_class=dataset.tokenizer,
         #data_collator=data_collator,
         callbacks=[EarlyStoppingCallback()],
