@@ -166,7 +166,7 @@ class TokenizedDraper(TokenizedDataset):
 class TokenizedFormAI(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
         self.dataset = load_dataset(settings["dataset_path"])
-        self.cleanup()
+        #self.cleanup()
         super().__init__(settings, self.dataset, 'source_code', logger)
 
     def get_label(self, example):
