@@ -1,10 +1,8 @@
 {
     "model": "deberta-base",
-    "_model_path": "/mnt/beegfs/jmvs0008/huggingface/hub/deberta-base",
-    "model_path": "microsoft/deberta-base",
+    "model_path": "/mnt/beegfs/jmvs0008/huggingface/hub/deberta-base",
     "dataset": "formai",
-    "_dataset_path": "/mnt/beegfs/jmvs0008/huggingface/datasets/formai",
-    "dataset_path": "Joshfcooper/formai-v2-full",
+    "dataset_path": "/mnt/beegfs/jmvs0008/huggingface/datasets/formai",
     "_comment:minimize_factor": "1 para no minimizar, entre 0 y 1 para minimizar",
     "minimize_factor": 1,
     "test_size": 0.2,

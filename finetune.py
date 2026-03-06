@@ -15,9 +15,9 @@ def get_model(settings):
     id2label = {0: "SAFE", 1: "VULNERABLE"}
     label2id = {"SAFE": 0, "VULNERABLE": 1}
 
-    #import os
-    #if not os.path.exists(settings["model_path"]):
-    #    raise ValueError(f"El path del modelo no existe: {settings['model_path']}. Asegúrate de haber descargado el modelo correctamente según las instrucciones en README.")
+    import os
+    if not os.path.exists(settings["model_path"]):
+        raise ValueError(f"El path del modelo no existe: {settings['model_path']}. Asegúrate de haber descargado el modelo correctamente según las instrucciones en README.")
 
     return AutoModelForSequenceClassification.from_pretrained(
         settings["model_path"], 
