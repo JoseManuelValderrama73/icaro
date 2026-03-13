@@ -194,7 +194,7 @@ class TokenizedBigVul(TokenizedDataset):
         new_splits = {}
         
         for split_name in self.dataset.keys():
-            filtered = self.dataset[split_name].filter(lambda example: example['CWE ID'] != None)
+            filtered = self.dataset[split_name].filter(lambda example: example['vul'] == 1)
             
             vulnerable_data = {
                 'code': filtered['func_before'],
