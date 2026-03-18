@@ -128,11 +128,70 @@ class TokenizedDataset:
     def __len__(self):
         return len(self.dataset)
 
+class TokenizedCombo(TokenizedDataset):
+    def __init__(self, settings: dict, logger: ExecutionLogger):
+        paths = settings["dataset_path"].split(",")
+        if len(paths) != 4:
+            if logger: logger.log_error("TokenizedCombo", f"Expected 4 dataset paths, got {len(paths)}")
+            raise ValueError(f"Expected 4 dataset paths, got {len(paths)}")
+            
+        # 1. BigVul
+        bigvul = load_dataset(paths[0])
+        bigvul = self.transform(bigvul, 'func_before', 'vul', None)
+        
+        # 2. Draper
+        draper = load_dataset(paths[1])
+        draper = self.transform(draper, 'functionSource', 'combine', 0)
+        
+        # 3. DiverseVul
+        diversevul = load_dataset(paths[2])
+        diversevul = self.transform(diversevul, 'func', 'target', 0)
+        
+        # 4. FormAI
+        formai = load_dataset(paths[3])
+        formai = self.cleanup_formai(formai)
+        formai = self.transform(formai, 'source_code', 'vulnerable_line', -1)
+        
+        from datasets import concatenate_datasets
+        self.dataset = DatasetDict({
+            'train': concatenate_datasets([bigvul['train'], draper['train'], diversevul['train'], formai['train']]),
+            'validation': concatenate_datasets([bigvul['validation'], draper['validation'], diversevul['validation']]),
+            'test': concatenate_datasets([bigvul['test'], draper['test'], diversevul['test']])
+        })
+        
+        super().__init__(settings, self.dataset, 'code', logger)
+
+    def transform(self, dataset, code, label, safe_tag):
+        from datasets import Dataset, concatenate_datasets
+        
+        new_splits = {}
+        for split_name in dataset.keys():
+            if safe_tag is not None:
+                filtered = dataset[split_name].filter(lambda example: example[label] != safe_tag)
+            else:
+                filtered = dataset[split_name]
+            
+            data = {
+                'code': filtered[code],
+                'vulnerable': [1] * len(filtered)
+            }
+            new_splits[split_name] = Dataset.from_dict(data)
+        
+        return DatasetDict(new_splits)
+
+    def get_label(self, example):
+        return example['vulnerable']
+
+    def label(self, tk, examples):
+        tk['labels'] = [int(v) for v in examples['vulnerable']]
+
+    def cleanup_formai(self, dataset):
+        """ Elimina ejemplos no verificados """
+        return dataset.filter(lambda example: example['verification_finished'] == 'yes')
 
 class TokenizedCastle(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
         dataset = load_dataset('json', data_files=settings['dataset_path'], field='tests')
-        print(dataset)
         super().__init__(settings, dataset, 'code', logger)
 
     def get_label(self, example):
@@ -166,7 +225,7 @@ class TokenizedDraper(TokenizedDataset):
 class TokenizedFormAI(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
         self.dataset = load_dataset(settings["dataset_path"])
-        #self.cleanup()
+        self.cleanup() # se queda solo con los que estan verificados
         super().__init__(settings, self.dataset, 'source_code', logger)
 
     def get_label(self, example):
@@ -182,9 +241,7 @@ class TokenizedFormAI(TokenizedDataset):
 class TokenizedBigVul(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
         self.dataset = load_dataset(settings["dataset_path"])
-        print(self.dataset)
         self.transform()
-        print(self.dataset)
         super().__init__(settings, self.dataset, 'code', logger)
 
     def transform(self):
