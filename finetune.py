@@ -1,7 +1,7 @@
 from transformers import TrainerCallback
 
 class EarlyStoppingCallback(TrainerCallback):
-    def __init__(self, num_steps=10):
+    def __init__(self, num_steps):
         self.num_steps = num_steps
 
     def on_step_end(self, args, state, control, **kwargs):
@@ -29,7 +29,6 @@ def get_model(settings):
 def get_dataset(settings, logger):
     import tokenizer
 
-    """
     if settings["dataset"] == 'castle':
             dataset = tokenizer.TokenizedCastle(settings, logger)
     elif settings["dataset"] == 'draper':
@@ -38,10 +37,10 @@ def get_dataset(settings, logger):
             dataset = tokenizer.TokenizedFormAI(settings, logger)
     elif settings["dataset"] == 'bigvul':
             dataset = tokenizer.TokenizedBigVul(settings, logger)
+    elif settings["dataset"] == 'combo':
+        dataset = tokenizer.TokenizedCombo(settings, logger)
     else:
         raise ValueError("Dataset invalido")
-    """
-    dataset = tokenizer.TokenizedCombo(settings, logger)
     
     return dataset
 
@@ -81,7 +80,7 @@ def train(model, dataset):
         compute_metrics=compute_metrics,
         processing_class=dataset.tokenizer,
         #data_collator=data_collator,
-        callbacks=[EarlyStoppingCallback()],
+        callbacks=[EarlyStoppingCallback(num_steps=settings["stopping_steps"])],
     )
 
     trainer.train()
