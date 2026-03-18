@@ -29,6 +29,7 @@ def get_model(settings):
 def get_dataset(settings, logger):
     import tokenizer
 
+    """
     if settings["dataset"] == 'castle':
             dataset = tokenizer.TokenizedCastle(settings, logger)
     elif settings["dataset"] == 'draper':
@@ -39,6 +40,8 @@ def get_dataset(settings, logger):
             dataset = tokenizer.TokenizedBigVul(settings, logger)
     else:
         raise ValueError("Dataset invalido")
+    """
+    dataset = tokenizer.TokenizedCombo(settings, logger)
     
     return dataset
 
