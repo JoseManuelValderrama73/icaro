@@ -29,6 +29,7 @@ def get_model(settings):
 def get_dataset(settings, logger):
     import tokenizer
 
+    """
     if settings["dataset"] == 'castle':
             dataset = tokenizer.TokenizedCastle(settings, logger)
     elif settings["dataset"] == 'draper':
@@ -39,9 +40,12 @@ def get_dataset(settings, logger):
             dataset = tokenizer.TokenizedBigVul(settings, logger)
     else:
         raise ValueError("Dataset invalido")
+    """
+    dataset = tokenizer.TokenizedCombo(settings, logger)
     
     return dataset
 
+# usar metricas que me dice claude
 def compute_metrics(eval_pred):
     import numpy as np
 
@@ -74,7 +78,7 @@ def train(model, dataset):
         model=model,
         args=training_args,
         train_dataset=dataset['train'],
-        eval_dataset=dataset['test'],
+        eval_dataset=dataset['validation'],
         compute_metrics=compute_metrics,
         processing_class=dataset.tokenizer,
         #data_collator=data_collator,
