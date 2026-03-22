@@ -3,6 +3,12 @@ from transformers import AutoTokenizer
 from datasets import load_dataset
 from constants import *
 from logger import ExecutionLogger
+from enum import Enum
+
+class TransformAction(Enum):
+    KEEP = 0
+    TO_VULNERABLE = 1
+    TO_SAFE = 2
 
 class TokenizedDataset:
     def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str, logger: ExecutionLogger):
@@ -137,20 +143,24 @@ class TokenizedCombo(TokenizedDataset):
             
         # 1. BigVul
         bigvul = load_dataset(paths[0])
-        bigvul = self.transform(bigvul, 'func_before', 'vul', None)
+        bigvul = self.transform(TransformAction.KEEP, bigvul, 'func_before', 'vul', 0)
+        print(f"BigVul: {len(bigvul['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(bigvul['train'])}")    
         
         # 2. Draper
         draper = load_dataset(paths[1])
-        draper = self.transform(draper, 'functionSource', 'combine', 0)
+        draper = self.transform(TransformAction.TO_VULNERABLE, draper, 'functionSource', 'combine', 0)
+        print(f"Draper: {len(draper['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(draper['train'])}")    
         
         # 3. DiverseVul
         diversevul = load_dataset(paths[2])
-        diversevul = self.transform(diversevul, 'func', 'target', 0)
+        diversevul = self.transform(TransformAction.KEEP, diversevul, 'func', 'target', 0)
+        print(f"DiverseVul: {len(diversevul['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(diversevul['train'])}")    
         
         # 4. FormAI
         formai = load_dataset(paths[3])
         formai = self.cleanup_formai(formai)
-        formai = self.transform(formai, 'source_code', 'vulnerable_line', -1)
+        formai = self.transform(TransformAction.TO_VULNERABLE, formai, 'source_code', 'vulnerable_line', -1)
+        print(f"FormAI: {len(formai['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(formai['train'])}")    
         
         from datasets import concatenate_datasets
         self.dataset = DatasetDict({
@@ -158,24 +168,38 @@ class TokenizedCombo(TokenizedDataset):
             'validation': concatenate_datasets([bigvul['validation'], draper['validation'], diversevul['validation']]),
             'test': concatenate_datasets([bigvul['test'], draper['test'], diversevul['test']])
         })
+
+        # print the percentage of the rows with label 1
+        for split_name in self.dataset.keys():
+            print(f"Percentage of rows with label 1 in {split_name}: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")    
         
         super().__init__(settings, self.dataset, 'code', logger)
 
-    def transform(self, dataset, code, label, safe_tag):
+    def transform(self, action: TransformAction, dataset, code, label, safe_tag):
         from datasets import Dataset, concatenate_datasets
         
         new_splits = {}
         for split_name in dataset.keys():
-            if safe_tag is not None:
+            if action == TransformAction.TO_VULNERABLE:
                 filtered = dataset[split_name].filter(lambda example: example[label] != safe_tag)
-            else:
-                filtered = dataset[split_name]
-            
-            data = {
-                'code': filtered[code],
-                'vulnerable': [1] * len(filtered)
-            }
-            new_splits[split_name] = Dataset.from_dict(data)
+                data = {
+                    'code': filtered[code],
+                    'vulnerable': [1] * len(filtered)
+                }
+                new_splits[split_name] = Dataset.from_dict(data)
+            elif action == TransformAction.TO_SAFE:
+                filtered = dataset[split_name].filter(lambda example: example[label] == safe_tag)
+                data = {
+                    'code': filtered[code],
+                    'vulnerable': [0] * len(filtered)
+                }
+                new_splits[split_name] = Dataset.from_dict(data)
+            elif action == TransformAction.KEEP:
+                data = {
+                    'code': dataset[split_name][code],
+                    'vulnerable': [int(v != safe_tag) for v in dataset[split_name][label]]
+                }
+                new_splits[split_name] = Dataset.from_dict(data)
         
         return DatasetDict(new_splits)
 
