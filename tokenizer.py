@@ -144,23 +144,19 @@ class TokenizedCombo(TokenizedDataset):
         # 1. BigVul
         bigvul = load_dataset(paths[0])
         bigvul = self.transform(TransformAction.KEEP, bigvul, 'func_before', 'vul', 0)
-        print(f"BigVul: {len(bigvul['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(bigvul['train'])}")    
         
         # 2. Draper
         draper = load_dataset(paths[1])
         draper = self.transform(TransformAction.TO_VULNERABLE, draper, 'functionSource', 'combine', 0)
-        print(f"Draper: {len(draper['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(draper['train'])}")    
         
         # 3. DiverseVul
         diversevul = load_dataset(paths[2])
         diversevul = self.transform(TransformAction.KEEP, diversevul, 'func', 'target', 0)
-        print(f"DiverseVul: {len(diversevul['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(diversevul['train'])}")    
         
         # 4. FormAI
         formai = load_dataset(paths[3])
         formai = self.cleanup_formai(formai)
         formai = self.transform(TransformAction.TO_VULNERABLE, formai, 'source_code', 'vulnerable_line', -1)
-        print(f"FormAI: {len(formai['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(formai['train'])}")    
         
         from datasets import concatenate_datasets
         self.dataset = DatasetDict({
@@ -169,10 +165,6 @@ class TokenizedCombo(TokenizedDataset):
             'test': concatenate_datasets([bigvul['test'], draper['test'], diversevul['test']])
         })
 
-        # print the percentage of the rows with label 1
-        for split_name in self.dataset.keys():
-            print(f"Percentage of rows with label 1 in {split_name}: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")    
-        
         super().__init__(settings, self.dataset, 'code', logger)
 
     def transform(self, action: TransformAction, dataset, code, label, safe_tag):
