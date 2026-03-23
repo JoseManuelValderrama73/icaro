@@ -8,28 +8,9 @@ def check_dirs(model_path, tokenizer_path, code_path):
     if not os.path.exists(code_path):
         raise FileNotFoundError(f"La ruta {code_path} no existe. Actualiza el archivo de configuración con una ruta válida al código a analizar.")
 
-def get_code(file_path: str) -> str:
-    """
-    Lee y formatea el código fuente desde un archivo.
-    Elimina comentarios y sustituye tabulaciones por espacios.
-    """
-    import re
-    with open(file_path, 'r', encoding='utf-8') as f:
-        code = f.read()
-    
-    # Remove multi-line comments /* */
-    code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
-    
-    # Remove single-line comments //
-    code = re.sub(r'//.*?$', '', code, flags=re.MULTILINE)
-    
-    # Replace tabs with spaces
-    code = code.replace('\t', '    ')
-    
-    return code
 
 if __name__ == "__main__":
-    from constants import *
+    from shared import *
     from tokenizer import *
     from transformers import pipeline
     from logger import ExecutionLogger

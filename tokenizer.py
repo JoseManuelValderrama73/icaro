@@ -1,7 +1,7 @@
 from datasets.load import DatasetDict
 from transformers import AutoTokenizer
 from datasets import load_dataset
-from constants import *
+from shared import *
 from logger import ExecutionLogger
 from enum import Enum
 
@@ -12,27 +12,24 @@ class TransformAction(Enum):
 
 class TokenizedDataset:
     def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str, logger: ExecutionLogger):
-        self.dataset = dataset
         self.seed = get_seed(settings, logger)
 
-        minimize_factor = settings['minimize_factor']
-        if minimize_factor <= 0 or minimize_factor > 1:
+        if settings['minimize_factor'] <= 0 or settings['minimize_factor'] > 1:
             if logger: logger.log_error("TokenizedDataset", "minimize_factor debe estar en el rango (0, 1]")
             if logger: logger.finalize("TokenizedDataset", "FAILED")
             raise ValueError("minimize_factor debe estar en el rango (0, 1]")
-        if minimize_factor != 1:
-            self.minimize(minimize_factor)
-            if logger: logger.log_step("TokenizedDataset", f"Dataset minimized by factor {minimize_factor}", "COMPLETED")
+        if settings['minimize_factor'] != 1:
+            self.minimize(settings['minimize_factor'], dataset)
+            if logger: logger.log_step("TokenizedDataset", f"Dataset minimized by factor {settings['minimize_factor']}", "COMPLETED")
 
         self.tokenizer = AutoTokenizer.from_pretrained(settings["model_path"], local_files_only=True)
         if logger: logger.log_step("TokenizedDataset", f"Tokenizer {settings['model']} loaded", "COMPLETED")
 
-        if 'train' not in self.dataset or 'test' not in self.dataset:
-            self.train_test_split(settings["test_size"])
-            if logger: logger.log_step("TokenizedDataset", f"Dataset split into train and test with test size {settings['test_size']}", "COMPLETED")
-            
+        clean_ds = dataset.map(self.clean_examples, batched=True)
+        if logger: logger.log_step("TokenizedDataset", "Dataset cleaned", "COMPLETED")
+
         self.code_snippet = code_snippet
-        self.dataset = self.dataset.map(self.tokenize, batched=True, remove_columns=self.dataset['train'].column_names)
+        self.dataset = clean_ds.map(self.tokenize, batched=True)
         if logger: logger.log_step("TokenizedDataset", "Dataset tokenized", "COMPLETED")
         '''
         try:
@@ -61,30 +58,21 @@ class TokenizedDataset:
         """
         self.label(tk, examples)
         return tk
+
+    def clean_examples(self, examples):
+        from shared import clean_code
+        examples[self.code_snippet] = [clean_code(c) if c is not None else "" for c in examples[self.code_snippet]]
+        return examples
     
-    def train_test_split(self, test_size):
-        """
-        Divide el dataset en conjunto de entrenamiento y prueba.
-        
-        :param test_size: Tamaño del conjunto de prueba. Rango (0, 1)
-        :param seed: Semilla para la división aleatoria
-        """
-        print("[Tokenizer]: Se divide el dataset en 'train' y 'test'")
-        train_test = self.dataset['train'].train_test_split(test_size=test_size, seed=self.seed)
-        self.dataset = DatasetDict({
-            'train': train_test['train'],
-            'test': train_test['test']
-        })
-    
-    def minimize(self, factor: float):
+    def minimize(self, factor: float, dataset: DatasetDict):
         """
         Minimiza el dataset para pruebas rápidas manteniendo el balance de clases.
 
         :param factor: factor de minimización
         """
-        for split in self.dataset.keys():
+        for split in dataset.keys():
             # Agregar columna temporal con las etiquetas
-            dataset_with_labels = self.dataset[split].map(
+            dataset_with_labels = dataset[split].map(
                 lambda example, idx: {'label_temp': self.get_label(example)}, 
                 with_indices=True
             )
@@ -108,7 +96,7 @@ class TokenizedDataset:
             # Combinar y mezclar
             from datasets import concatenate_datasets
             combined = concatenate_datasets([sampled_vulnerable, sampled_non_vulnerable])
-            self.dataset[split] = combined.shuffle(seed=self.seed).remove_columns(['label_temp'])
+            dataset[split] = combined.shuffle(seed=self.seed).remove_columns(['label_temp'])
 
     def get_label(self, example):
         """
@@ -137,38 +125,39 @@ class TokenizedDataset:
 class TokenizedCombo(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
         paths = settings["dataset_path"].split(",")
-        if len(paths) != 4:
-            if logger: logger.log_error("TokenizedCombo", f"Expected 4 dataset paths, got {len(paths)}")
-            raise ValueError(f"Expected 4 dataset paths, got {len(paths)}")
             
-        # 1. BigVul
-        bigvul = load_dataset(paths[0])
-        bigvul = self.transform(TransformAction.KEEP, bigvul, 'func_before', 'vul', 0)
-        print(f"BigVul: {len(bigvul['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(bigvul['train'])}")    
-        
-        # 2. Draper
-        draper = load_dataset(paths[1])
-        draper = self.transform(TransformAction.TO_VULNERABLE, draper, 'functionSource', 'combine', 0)
-        print(f"Draper: {len(draper['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(draper['train'])}")    
-        
-        # 3. DiverseVul
-        diversevul = load_dataset(paths[2])
-        diversevul = self.transform(TransformAction.KEEP, diversevul, 'func', 'target', 0)
-        print(f"DiverseVul: {len(diversevul['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(diversevul['train'])}")    
-        
-        # 4. FormAI
-        formai = load_dataset(paths[3])
-        formai = self.cleanup_formai(formai)
-        formai = self.transform(TransformAction.TO_VULNERABLE, formai, 'source_code', 'vulnerable_line', -1)
-        print(f"FormAI: {len(formai['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(formai['train'])}")    
-        
         from datasets import concatenate_datasets
-        self.dataset = DatasetDict({
-            'train': concatenate_datasets([bigvul['train'], draper['train'], diversevul['train'], formai['train']]),
-            'validation': concatenate_datasets([bigvul['validation'], draper['validation'], diversevul['validation']]),
-            'test': concatenate_datasets([bigvul['test'], draper['test'], diversevul['test']])
-        })
+        combo = None
+        for path in paths:
+            ds = load_dataset(path)
+            path_lower = path.lower()
+            if 'bigvul' in path_lower:
+                ds = self.transform(TransformAction.KEEP, ds, 'func_before', 'vul', 0)
+            elif 'draper' in path_lower:
+                ds = self.transform(TransformAction.TO_VULNERABLE, ds, 'functionSource', 'combine', 0)
+            elif 'diversevul' in path_lower:
+                ds = self.transform(TransformAction.KEEP, ds, 'func', 'target', 0)
+            elif 'formai' in path_lower:
+                ds = self.cleanup_formai(ds)
+                ds = self.transform(TransformAction.TO_VULNERABLE, ds, 'source_code', 'vulnerable_line', -1)
+            else:
+                raise ValueError(f"Unknown dataset path: {path}")
 
+            print(f"{path}: {len(ds['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(ds['train'])}")    
+            if combo:
+                if 'validation' not in ds.keys():
+                    ds['validation'] = ds['train'].shuffle(seed=settings['seed']).select(range(int(0.2 * len(ds['train']))))
+                if 'test' not in ds.keys():
+                    ds['test'] = ds['train'].shuffle(seed=settings['seed']).select(range(int(0.2 * len(ds['train']))))
+                combo = DatasetDict({
+                    'train': concatenate_datasets([combo['train'], ds['train']]),
+                    'validation': concatenate_datasets([combo['validation'], ds['validation']]),
+                    'test': concatenate_datasets([combo['test'], ds['test']])
+                })
+            else:
+                combo = ds
+
+        self.dataset = combo
         # print the percentage of the rows with label 1
         for split_name in self.dataset.keys():
             print(f"Percentage of rows with label 1 in {split_name}: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")    
@@ -223,79 +212,4 @@ class TokenizedCastle(TokenizedDataset):
 
     def label(self, tk, examples):
         # convierto de True y False a 1 y 0
-        tk['labels'] = [int(v) for v in examples['vulnerable']]
-
-class TokenizedDraper(TokenizedDataset):
-    def __init__(self, settings: dict, logger: ExecutionLogger):
-        self.code_snippet = 'functionSource'
-        dataset = load_dataset(settings["dataset_path"])
-        super().__init__(settings, dataset, self.code_snippet, logger)
-
-    def get_label(self, example):
-        return 1 if any(
-            example[cwe] 
-            for cwe in ['CWE-119', 'CWE-120', 'CWE-469', 'CWE-476', 'CWE-other']
-        ) else 0
-
-    def label(self, tk, examples):
-        tk['labels'] = []
-        for i in range(len(examples[self.code_snippet])):
-            has_vulnerability = any(
-                examples[cwe][i] 
-                for cwe in ['CWE-119', 'CWE-120', 'CWE-469', 'CWE-476', 'CWE-other']
-            )
-            tk['labels'].append(1 if has_vulnerability else 0)
-    
-class TokenizedFormAI(TokenizedDataset):
-    def __init__(self, settings: dict, logger: ExecutionLogger):
-        self.dataset = load_dataset(settings["dataset_path"])
-        self.cleanup() # se queda solo con los que estan verificados
-        super().__init__(settings, self.dataset, 'source_code', logger)
-
-    def get_label(self, example):
-        return 0 if example['vulnerable_line'] == -1 else 1
-
-    def label(self, tk, examples):
-        tk['labels'] = [0 if line == -1 else 1 for line in examples['vulnerable_line']]
-    
-    def cleanup(self):
-        """ Elimina ejemplos no verificados """
-        self.dataset = self.dataset.filter(lambda example: example['verification_finished'] == 'yes')
-
-class TokenizedBigVul(TokenizedDataset):
-    def __init__(self, settings: dict, logger: ExecutionLogger):
-        self.dataset = load_dataset(settings["dataset_path"])
-        self.transform()
-        super().__init__(settings, self.dataset, 'code', logger)
-
-    def transform(self):
-        """ Genera un dataset con los ejemplos vulnerables y sus arreglos aparecen por separado """
-        from datasets import Dataset, concatenate_datasets
-        
-        new_splits = {}
-        
-        for split_name in self.dataset.keys():
-            filtered = self.dataset[split_name].filter(lambda example: example['vul'] == 1)
-            
-            vulnerable_data = {
-                'code': filtered['func_before'],
-                'vulnerable': [1] * len(filtered)
-            }
-            vulnerable_dataset = Dataset.from_dict(vulnerable_data)
-            
-            non_vulnerable_data = {
-                'code': filtered['func_after'],
-                'vulnerable': [0] * len(filtered)
-            }
-            non_vulnerable_dataset = Dataset.from_dict(non_vulnerable_data)
-            
-            combined = concatenate_datasets([vulnerable_dataset, non_vulnerable_dataset])
-            new_splits[split_name] = combined
-        
-        self.dataset = DatasetDict(new_splits)
-    
-    def get_label(self, example):
-        return example['vulnerable']
-
-    def label(self, tk, examples):
         tk['labels'] = [int(v) for v in examples['vulnerable']]

@@ -1,7 +1,7 @@
 from transformers import TrainerCallback
 
 class EarlyStoppingCallback(TrainerCallback):
-    def __init__(self, num_steps=10):
+    def __init__(self, num_steps):
         self.num_steps = num_steps
 
     def on_step_end(self, args, state, control, **kwargs):
@@ -24,23 +24,10 @@ def get_model(settings):
         num_labels=2,
         id2label=id2label,
         label2id=label2id,
-        local_files_only=True
+        local_files_only=False
     )
 def get_dataset(settings, logger):
     import tokenizer
-
-    """
-    if settings["dataset"] == 'castle':
-            dataset = tokenizer.TokenizedCastle(settings, logger)
-    elif settings["dataset"] == 'draper':
-            dataset = tokenizer.TokenizedDraper(settings, logger)
-    elif settings["dataset"] == 'formai':
-            dataset = tokenizer.TokenizedFormAI(settings, logger)
-    elif settings["dataset"] == 'bigvul':
-            dataset = tokenizer.TokenizedBigVul(settings, logger)
-    else:
-        raise ValueError("Dataset invalido")
-    """
     dataset = tokenizer.TokenizedCombo(settings, logger)
     
     return dataset
@@ -66,7 +53,7 @@ def train(model, dataset):
         metric_for_best_model="accuracy",
         per_device_train_batch_size=settings["batch_size"],
         per_device_eval_batch_size=settings["batch_size"],
-        #gradient_accumulation_steps=settings["gradient_accumulation_steps"],
+        gradient_accumulation_steps=settings["gradient_accumulation_steps"],
         num_train_epochs=settings["num_epochs"],
         greater_is_better=True,
         # logs
@@ -82,7 +69,7 @@ def train(model, dataset):
         compute_metrics=compute_metrics,
         processing_class=dataset.tokenizer,
         #data_collator=data_collator,
-        callbacks=[EarlyStoppingCallback()],
+        callbacks=[EarlyStoppingCallback(num_steps=settings["stopping_steps"])],
     )
 
     trainer.train()
@@ -90,7 +77,7 @@ def train(model, dataset):
 
 
 if __name__ == "__main__":
-    from constants import *
+    from shared import *
     from logger import ExecutionLogger
 
     settings = load_settings('finetune_settings.json')
