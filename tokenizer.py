@@ -14,6 +14,7 @@ class TokenizedDataset:
     def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str, logger: ExecutionLogger):
         self.seed = get_seed(settings, logger)
         self.max_length = settings.get("max_length", 1024)
+        self.code_snippet = code_snippet
 
         if settings['minimize_factor'] <= 0 or settings['minimize_factor'] > 1:
             if logger: logger.log_error("TokenizedDataset", "minimize_factor debe estar en el rango (0, 1]")
@@ -29,7 +30,6 @@ class TokenizedDataset:
         clean_ds = dataset.map(self.clean_examples, batched=True)
         if logger: logger.log_step("TokenizedDataset", "Dataset cleaned", "COMPLETED")
 
-        self.code_snippet = code_snippet
         self.dataset = clean_ds.map(self.tokenize, batched=True)
         if logger: logger.log_step("TokenizedDataset", "Dataset tokenized", "COMPLETED")
         '''
@@ -134,7 +134,6 @@ class TokenizedCombo(TokenizedDataset):
             else:
                 raise ValueError(f"Unknown dataset path: {path}")
 
-            print(f"{path}: {len(ds['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(ds['train'])}")    
             if combo:
                 if 'validation' not in ds.keys():
                     ds['validation'] = ds['train'].shuffle(seed=settings['seed']).select(range(int(0.2 * len(ds['train']))))
@@ -149,10 +148,6 @@ class TokenizedCombo(TokenizedDataset):
                 combo = ds
 
         self.dataset = combo
-        # print the percentage of the rows with label 1
-        for split_name in self.dataset.keys():
-            print(f"Percentage of rows with label 1 in {split_name}: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")    
-        
         super().__init__(settings, self.dataset, 'code', logger)
 
     def transform(self, action: TransformAction, dataset, code, label, safe_tag):

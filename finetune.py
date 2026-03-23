@@ -27,7 +27,7 @@ def get_model(settings):
         label2id=label2id,
         max_position_embeddings=max_length + 2, # +2 for RoBERTa special tokens
         ignore_mismatched_sizes=True,
-        local_files_only=False
+        local_files_only=True
     )
 def get_dataset(settings, logger):
     import tokenizer
