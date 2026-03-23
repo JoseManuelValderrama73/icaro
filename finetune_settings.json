@@ -6,9 +6,13 @@
     "_comment:minimize_factor": "1 para no minimizar, entre 0 y 1 para minimizar",
     "minimize_factor": 1,
     "test_size": 0.2,
-    "num_epochs": 50,
+    "num_epochs": 5,
     "batch_size": 16,
     "gradient_accumulation_steps": 4,
     "stopping_steps": 20,
+    "learning_rate": 2e-5,
+    "warmup_ratio": 0.1,
+    "weight_decay": 0.01,
+    "max_length": 1024,
     "seed": 42
 }

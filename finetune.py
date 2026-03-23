@@ -19,43 +19,35 @@ def get_model(settings):
     if not os.path.exists(settings["model_path"]):
         raise ValueError(f"El path del modelo no existe: {settings['model_path']}. Asegúrate de haber descargado el modelo correctamente según las instrucciones en README.")
 
+    max_length = settings.get("max_length", 1024)
     return AutoModelForSequenceClassification.from_pretrained(
         settings["model_path"], 
         num_labels=2,
         id2label=id2label,
         label2id=label2id,
-        local_files_only=True
+        max_position_embeddings=max_length + 2, # +2 for RoBERTa special tokens
+        ignore_mismatched_sizes=True,
+        local_files_only=False
     )
 def get_dataset(settings, logger):
     import tokenizer
-
-    """
-    if settings["dataset"] == 'castle':
-            dataset = tokenizer.TokenizedCastle(settings, logger)
-    elif settings["dataset"] == 'draper':
-            dataset = tokenizer.TokenizedDraper(settings, logger)
-    elif settings["dataset"] == 'formai':
-            dataset = tokenizer.TokenizedFormAI(settings, logger)
-    elif settings["dataset"] == 'bigvul':
-            dataset = tokenizer.TokenizedBigVul(settings, logger)
-    elif settings["dataset"] == 'combo':
-        dataset = tokenizer.TokenizedCombo(settings, logger)
-    else:
-        raise ValueError("Dataset invalido")
-    """
     dataset = tokenizer.TokenizedCombo(settings, logger)
     
     return dataset
 
-# usar metricas que me dice claude
 def compute_metrics(eval_pred):
     import numpy as np
+    from sklearn.metrics import f1_score, precision_score, recall_score
 
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
-    
-    accuracy = (predictions == labels).mean()
-    return {"accuracy": accuracy}
+
+    return {
+        "f1":        f1_score(labels, predictions),
+        "precision": precision_score(labels, predictions),
+        "recall":    recall_score(labels, predictions),
+        "accuracy":  (predictions == labels).mean()
+    }
 
 def train(model, dataset):
     from transformers import Trainer, TrainingArguments
@@ -65,12 +57,15 @@ def train(model, dataset):
         eval_strategy='epoch',
         save_strategy='epoch',
         load_best_model_at_end=True, # en cada epoch guarda el modelo y al final se queda el mejor
-        metric_for_best_model="accuracy",
+        metric_for_best_model="f1",
+        greater_is_better=True,
         per_device_train_batch_size=settings["batch_size"],
         per_device_eval_batch_size=settings["batch_size"],
-        #gradient_accumulation_steps=settings["gradient_accumulation_steps"],
+        gradient_accumulation_steps=settings["gradient_accumulation_steps"],
+        learning_rate=settings.get("learning_rate", 5e-5),
+        warmup_ratio=settings.get("warmup_ratio", 0.0),
+        weight_decay=settings.get("weight_decay", 0.0),
         num_train_epochs=settings["num_epochs"],
-        greater_is_better=True,
         # logs
         logging_dir=TRAINING_LOG_PATH,
         logging_steps=10,
@@ -92,7 +87,7 @@ def train(model, dataset):
 
 
 if __name__ == "__main__":
-    from constants import *
+    from shared import *
     from logger import ExecutionLogger
 
     settings = load_settings('finetune_settings.json')

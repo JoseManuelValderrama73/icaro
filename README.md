@@ -16,7 +16,7 @@ Añadir a .bashrc:
 
 Si quieres cambiar el directorio por defecto añade:
 
-    export HF_HOME=directorio deseado
+    export HF_HOME=directorio deseado (ej. /mnt/beegfs/jmvs0008/huggingface)
     export TRANSFORMERS_CACHE=$HF_HOME/hub
     export HF_DATASETS_CACHE=$HF_HOME/datasets
 
@@ -24,6 +24,7 @@ Si quieres cambiar el directorio por defecto añade:
 
     microsoft/deberta-base
     google-bert/bert-base-cased
+    microsoft/graphcodebert-base
 
 `hf download modelo --local-dir $HF_HOME/hub/modelo`
 

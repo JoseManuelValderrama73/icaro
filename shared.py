@@ -1,5 +1,31 @@
 from logger import ExecutionLogger
 
+def clean_code(code: str) -> str:
+    """
+    Limpia una cadena de código fuente.
+    Elimina comentarios y sustituye tabulaciones por espacios.
+    """
+    import re
+    # Remove multi-line comments /* */
+    code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
+    
+    # Remove single-line comments //
+    code = re.sub(r'//.*?$', '', code, flags=re.MULTILINE)
+    
+    # Replace tabs with spaces
+    code = code.replace('\t', '    ')
+    
+    return code
+
+def get_code(file_path: str) -> str:
+    """
+    Lee y formatea el código fuente desde un archivo.
+    Elimina comentarios y sustituye tabulaciones por espacios.
+    """
+    with open(file_path, 'r', encoding='utf-8') as f:
+        code = f.read()
+    
+    return clean_code(code)
 
 def get_seed(settings: dict, logger: ExecutionLogger) -> int:
     """
