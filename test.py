@@ -17,41 +17,59 @@ if __name__ == "__main__":
 
 
     settings = load_settings('test_settings.json')
-    
+    models = settings['model'].split(",")
+    datasets = settings['dataset'].split(",")
+    files = settings['code_file'].split(",")
     # Inicializar logger
     logger = ExecutionLogger('testing', settings)
-    logger.log_step("test.py", "Testing execution")
     
-    try:
-        model = model_save_path(settings["model"], settings["dataset"])
-        tokenizer = tokenizer_save_path(settings["model"], settings["dataset"])
-        logger.log("test.py", f"Model path: {model}")
-        logger.log("test.py", f"Tokenizer path: {tokenizer}")
-        
-        check_dirs(model, tokenizer, settings["code_file"])
-        logger.log_step("check_dirs", "Directories verified", "COMPLETED")
+    i = 1
+    for m in models:
+        for d in datasets:
+            for f in files:
+                logger.log_step("test.py", f"""Testing execution {i}/{len(models)*len(datasets)*len(files)}
+                                            Model: {m}
+                                            Dataset: {d}
+                                            File: {f}
+                                            """)
+                i += 1
+                try:
+                    model = model_save_path(m, d)
+                    tokenizer = tokenizer_save_path(m, d)
+                    logger.log("test.py", f"Model path: {model}")
+                    logger.log("test.py", f"Tokenizer path: {tokenizer}")
+                    
+                    check_dirs(model, tokenizer, f)
+                    logger.log_step("check_dirs", "Directories verified", "COMPLETED")
 
-        classifier = pipeline(
-            "text-classification", 
-            model=model, 
-            tokenizer=tokenizer,
-            truncation=True,
-            max_length=settings.get("max_length", 1024)
-        )
-        logger.log_step("pipeline", "Pipeline loaded", "COMPLETED")
+                    classifier = pipeline(
+                        "text-classification", 
+                        model=model, 
+                        tokenizer=tokenizer,
+                        truncation=True,
+                        max_length=settings.get("max_length", 1024)
+                    )
+                    logger.log_step("pipeline", "Pipeline loaded", "COMPLETED")
 
-        code = get_code(settings["code_file"])
-        logger.log_step("get_code", f"Code from {settings['code_file']} loaded and formatted", "COMPLETED")
+                    code = get_code(f)
+                    logger.log_step("get_code", f"Code from {f} loaded and formatted", "COMPLETED")
 
-        result = classifier(code)
-        logger.log("classifier", f"Classification result: {result}")
-        
-        
-        logger.finalize("test.py", "SUCCESS")
-        output = "El codigo es vulnerable" if result[0]['label'] == 'VULNERABLE' else "El código es seguro"
-        print(output + " con una probabilidad del {:.3f}%".format(result[0]['score'] * 100))
-        
-    except Exception as e:
-        logger.log_error("test.py", e)
-        logger.finalize("test.py", "FAILED")
-        raise
+                    # Check token length to warn if it will be truncated
+                    max_length = settings.get("max_length", 1024)
+                    tokens = classifier.tokenizer(code, truncation=False)
+                    num_tokens = len(tokens['input_ids'])
+                    if num_tokens > max_length:
+                        logger.log("test.py", f"⚠️ ¡ADVERTENCIA! El código en {f} tiene {num_tokens} tokens. Supera el max_length configurado ({max_length}) y será truncado. Esto puede empeorar las predicciones.")
+
+                    result = classifier(code)
+                    logger.log("classifier", f"Classification result: {result}")
+                    
+                    
+                    logger.finalize("test.py", "SUCCESS")
+                    output = "El codigo es vulnerable" if result[0]['label'] == 'VULNERABLE' else "El código es seguro"
+                    print(output + " con una probabilidad del {:.3f}%".format(result[0]['score'] * 100))
+                    
+                except Exception as e:
+                    logger.log_error("test.py", e)
+                    logger.finalize("test.py", "FAILED")
+                    raise
