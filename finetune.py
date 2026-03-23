@@ -62,6 +62,9 @@ def train(model, dataset):
         per_device_train_batch_size=settings["batch_size"],
         per_device_eval_batch_size=settings["batch_size"],
         gradient_accumulation_steps=settings["gradient_accumulation_steps"],
+        learning_rate=settings.get("learning_rate", 5e-5),
+        warmup_ratio=settings.get("warmup_ratio", 0.0),
+        weight_decay=settings.get("weight_decay", 0.0),
         num_train_epochs=settings["num_epochs"],
         # logs
         logging_dir=TRAINING_LOG_PATH,
