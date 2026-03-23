@@ -13,6 +13,7 @@ class TransformAction(Enum):
 class TokenizedDataset:
     def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str, logger: ExecutionLogger):
         self.seed = get_seed(settings, logger)
+        self.max_length = settings.get("max_length", 1024)
 
         if settings['minimize_factor'] <= 0 or settings['minimize_factor'] > 1:
             if logger: logger.log_error("TokenizedDataset", "minimize_factor debe estar en el rango (0, 1]")
@@ -39,23 +40,13 @@ class TokenizedDataset:
         '''
 
     def tokenize(self, examples):
-        max_length = min(getattr(self.tokenizer, "model_max_length", 512), 512)
         tk = self.tokenizer(
             examples[self.code_snippet],
             padding="max_length",
             truncation=True,
-            max_length=max_length,
+            max_length=self.max_length,
             return_tensors=None  # Let Trainer handle tensor conversion
         )
-        """ TODO:
-        cambiar max_length hasta 786 (max de deberta) o
-        ajustar deberta para que acepte el tamaño necesario en main.py
-        model = AutoModelForSequenceClassification.from_pretrained(
-            MODEL, 
-            num_labels=2,
-            max_position_embeddings=1748  # Adjust model to accept longer sequences
-        )
-        """
         self.label(tk, examples)
         return tk
 

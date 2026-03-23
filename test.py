@@ -31,7 +31,13 @@ if __name__ == "__main__":
         check_dirs(model, tokenizer, settings["code_file"])
         logger.log_step("check_dirs", "Directories verified", "COMPLETED")
 
-        classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
+        classifier = pipeline(
+            "text-classification", 
+            model=model, 
+            tokenizer=tokenizer,
+            truncation=True,
+            max_length=settings.get("max_length", 1024)
+        )
         logger.log_step("pipeline", "Pipeline loaded", "COMPLETED")
 
         code = get_code(settings["code_file"])
