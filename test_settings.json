@@ -1,5 +1,5 @@
 {
-    "model": "deberta-base",
-    "dataset": "castle",
+    "model": "graphcodebert-base",
+    "dataset": "combo",
     "code_file": "codigo/suma.c"
 }
