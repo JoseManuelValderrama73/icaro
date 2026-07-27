@@ -1,13 +1,4 @@
-from transformers import TrainerCallback
-
-class EarlyStoppingCallback(TrainerCallback):
-    def __init__(self, num_steps):
-        self.num_steps = num_steps
-
-    def on_step_end(self, args, state, control, **kwargs):
-        if state.global_step >= self.num_steps:
-            control.should_training_stop = True
-        return control
+from transformers import EarlyStoppingCallback
 
 def get_model(settings):
     from transformers import AutoModelForSequenceClassification
@@ -19,15 +10,12 @@ def get_model(settings):
     #if not os.path.exists(settings["model_path"]):
     #    raise ValueError(f"El path del modelo no existe: {settings['model_path']}. Asegúrate de haber descargado el modelo correctamente según las instrucciones en README.")
 
-    max_length = settings.get("max_length", 1024)
     return AutoModelForSequenceClassification.from_pretrained(
         settings["model_path"], 
         num_labels=2,
         id2label=id2label,
         label2id=label2id,
-        max_position_embeddings=max_length + 2, # +2 for RoBERTa special tokens
-        ignore_mismatched_sizes=True,
-        local_files_only=False
+        local_files_only=True
     )
 def get_dataset(settings, logger):
     import tokenizer
@@ -79,7 +67,7 @@ def train(model, dataset):
         compute_metrics=compute_metrics,
         processing_class=dataset.tokenizer,
         #data_collator=data_collator,
-        callbacks=[EarlyStoppingCallback(num_steps=settings["stopping_steps"])],
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=settings.get("early_stopping_patience", 3))],
     )
 
     trainer.train()

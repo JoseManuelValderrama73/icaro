@@ -135,11 +135,18 @@ class TokenizedCombo(TokenizedDataset):
                 raise ValueError(f"Unknown dataset path: {path}")
 
             print(f"{path}: {len(ds['train'].filter(lambda example: example['vulnerable'] == 1))} / {len(ds['train'])}")    
+            
+            # Crear splits de validación y test si no existen, sin data leakage
+            if 'validation' not in ds.keys() or 'test' not in ds.keys():
+                split1 = ds['train'].train_test_split(test_size=0.3, seed=settings['seed'])
+                split2 = split1['test'].train_test_split(test_size=0.5, seed=settings['seed'])
+                ds = DatasetDict({
+                    'train': split1['train'],        # 70%
+                    'validation': split2['train'],    # 15%
+                    'test': split2['test']            # 15%
+                })
+
             if combo:
-                if 'validation' not in ds.keys():
-                    ds['validation'] = ds['train'].shuffle(seed=settings['seed']).select(range(int(0.2 * len(ds['train']))))
-                if 'test' not in ds.keys():
-                    ds['test'] = ds['train'].shuffle(seed=settings['seed']).select(range(int(0.2 * len(ds['train']))))
                 combo = DatasetDict({
                     'train': concatenate_datasets([combo['train'], ds['train']]),
                     'validation': concatenate_datasets([combo['validation'], ds['validation']]),
