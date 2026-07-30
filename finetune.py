@@ -58,6 +58,8 @@ def train(model, dataset):
         logging_dir=TRAINING_LOG_PATH,
         logging_steps=10,
         report_to="tensorboard",
+        bf16=settings.get("bf16", True),
+        dataloader_num_workers=settings.get("dataloader_num_workers", 4),
     )
     trainer = Trainer(
         model=model,
@@ -70,7 +72,20 @@ def train(model, dataset):
         callbacks=[EarlyStoppingCallback(early_stopping_patience=settings.get("early_stopping_patience", 3))],
     )
 
-    trainer.train()
+    import os
+    from transformers.trainer_utils import get_last_checkpoint
+    
+    # Intentar recuperar el último checkpoint si el entrenamiento se interrumpió
+    last_checkpoint = None
+    if os.path.isdir(training_args.output_dir):
+        last_checkpoint = get_last_checkpoint(training_args.output_dir)
+        
+    if last_checkpoint is not None:
+        print(f"Resumiendo entrenamiento desde checkpoint: {last_checkpoint}")
+        trainer.train(resume_from_checkpoint=last_checkpoint)
+    else:
+        trainer.train()
+        
     return trainer
 
 
