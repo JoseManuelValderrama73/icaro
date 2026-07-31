@@ -1,5 +1,6 @@
 {
-    "model": "deberta-base",
-    "dataset": "castle",
-    "code_file": "codigo/suma.c"
+    "model": "graphcodebert-base",
+    "dataset": "combo",
+    "code_file": "codigo/suma.c",
+    "max_length": 512
 }
