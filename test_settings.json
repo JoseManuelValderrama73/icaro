@@ -1,5 +1,6 @@
 {
     "model": "graphcodebert-base",
     "dataset": "combo",
-    "code_file": "codigo/suma.c"
+    "code_file": "codigo/suma.c",
+    "max_length": 512
 }

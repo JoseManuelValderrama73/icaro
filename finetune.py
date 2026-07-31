@@ -39,6 +39,20 @@ def compute_metrics(eval_pred):
 
 def train(model, dataset):
     from transformers import Trainer, TrainingArguments
+    import torch
+
+    # Detección automática de hardware para usar la mejor precisión mixta posible
+    use_bf16 = False
+    use_fp16 = False
+    if torch.cuda.is_available():
+        if torch.cuda.is_bf16_supported():
+            use_bf16 = True
+            logger.log("finetune.py", "Hardware soporta BF16. Activando precisión mixta BF16.")
+        else:
+            use_fp16 = True
+            logger.log("finetune.py", "Hardware NO soporta BF16. Activando precisión mixta FP16.")
+    else:
+        logger.log("finetune.py", "No se ha detectado GPU. Se usará precisión estándar.")
 
     training_args = TrainingArguments(
         output_dir=training_output_dir(settings["model"], settings["dataset"]),
@@ -58,7 +72,8 @@ def train(model, dataset):
         logging_dir=TRAINING_LOG_PATH,
         logging_steps=10,
         report_to="tensorboard",
-        bf16=settings.get("bf16", True),
+        bf16=settings.get("bf16", use_bf16),
+        fp16=settings.get("fp16", use_fp16),
         dataloader_num_workers=settings.get("dataloader_num_workers", 4),
     )
     trainer = Trainer(

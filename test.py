@@ -14,12 +14,18 @@ if __name__ == "__main__":
     from tokenizer import *
     from transformers import pipeline
     from logger import ExecutionLogger
+    import torch
 
 
     settings = load_settings('test_settings.json')
     models = settings['model'].split(",")
     datasets = settings['dataset'].split(",")
     files = settings['code_file'].split(",")
+    max_length = settings.get("max_length", 512)
+
+    # Detección automática de GPU para inferencia
+    device = 0 if torch.cuda.is_available() else -1
+
     # Inicializar logger
     logger = ExecutionLogger('testing', settings)
     
@@ -47,7 +53,8 @@ if __name__ == "__main__":
                         model=model, 
                         tokenizer=tokenizer,
                         truncation=True,
-                        max_length=settings.get("max_length", 1024)
+                        max_length=max_length,
+                        device=device
                     )
                     logger.log_step("pipeline", "Pipeline loaded", "COMPLETED")
 
@@ -55,7 +62,6 @@ if __name__ == "__main__":
                     logger.log_step("get_code", f"Code from {f} loaded and formatted", "COMPLETED")
 
                     # Check token length to warn if it will be truncated
-                    max_length = settings.get("max_length", 1024)
                     tokens = classifier.tokenizer(code, truncation=False)
                     num_tokens = len(tokens['input_ids'])
                     if num_tokens > max_length:
@@ -64,8 +70,6 @@ if __name__ == "__main__":
                     result = classifier(code)
                     logger.log("classifier", f"Classification result: {result}")
                     
-                    
-                    logger.finalize("test.py", "SUCCESS")
                     output = "El codigo es vulnerable" if result[0]['label'] == 'VULNERABLE' else "El código es seguro"
                     print(output + " con una probabilidad del {:.3f}%".format(result[0]['score'] * 100))
                     
@@ -73,3 +77,5 @@ if __name__ == "__main__":
                     logger.log_error("test.py", e)
                     logger.finalize("test.py", "FAILED")
                     raise
+
+    logger.finalize("test.py", "SUCCESS")
