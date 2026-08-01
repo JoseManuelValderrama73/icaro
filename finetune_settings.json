@@ -1,5 +1,5 @@
 {
-    "model": "graphcodebert",
+    "model": "graphcodebert-base",
     "_model_path": "/mnt/beegfs/jmvs0008/huggingface/hub/graphcodebert",
     "model_path": "microsoft/graphcodebert-base",
     "dataset": "combo",
