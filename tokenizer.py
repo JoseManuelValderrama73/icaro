@@ -28,6 +28,7 @@ class TokenizedDataset:
         clean_ds = dataset.map(self.clean_examples, batched=True)
         if logger: logger.log_step("TokenizedDataset", "Dataset cleaned", "COMPLETED")
 
+        self.code_snippet = code_snippet
         self.dataset = clean_ds.map(self.tokenize, batched=True)
         if logger: logger.log_step("TokenizedDataset", "Dataset tokenized", "COMPLETED")
         '''
