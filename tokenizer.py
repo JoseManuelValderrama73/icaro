@@ -157,9 +157,35 @@ class TokenizedCombo(TokenizedDataset):
         self.dataset = combo
         # print the percentage of the rows with label 1
         for split_name in self.dataset.keys():
-            print(f"Percentage of rows with label 1 in {split_name}: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")    
+            print(f"Percentage of rows with label 1 in {split_name} BEFORE balancing: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")
+            
+        self.dataset = self.force_balance(self.dataset, settings.get('seed', 42), logger)
+
+        for split_name in self.dataset.keys():
+            print(f"Percentage of rows with label 1 in {split_name} AFTER balancing: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")
         
         super().__init__(settings, self.dataset, 'code', logger)
+
+    def force_balance(self, dataset, seed, logger):
+        """Fuerza el balanceo 50-50 de vulnerables y no vulnerables"""
+        from datasets import DatasetDict, concatenate_datasets
+        
+        balanced_splits = {}
+        for split in dataset.keys():
+            vuln = dataset[split].filter(lambda x: x['vulnerable'] == 1)
+            safe = dataset[split].filter(lambda x: x['vulnerable'] == 0)
+            
+            min_count = min(len(vuln), len(safe))
+            
+            vuln = vuln.shuffle(seed=seed).select(range(min_count))
+            safe = safe.shuffle(seed=seed).select(range(min_count))
+            
+            balanced_splits[split] = concatenate_datasets([vuln, safe]).shuffle(seed=seed)
+            
+            if logger:
+                logger.log("force_balance", f"{split}: Balanced to {min_count} Vuln and {min_count} Safe (Total: {min_count*2})")
+                
+        return DatasetDict(balanced_splits)
 
     def transform(self, action: TransformAction, dataset, code, label, safe_tag):
         from datasets import Dataset, concatenate_datasets

@@ -4,7 +4,7 @@
     "model_path": "microsoft/graphcodebert-base",
     "dataset": "combo",
     "_dataset_path": "/mnt/beegfs/jmvs0008/huggingface/datasets/bigvul",
-    "dataset_path": "bstee615/bigvul,claudios/Draper,bstee615/diversevul,Joshfcooper/formai-v2-full",
+    "dataset_path": "bstee615/bigvul,claudios/Draper,bstee615/diversevul",
     "_comment:minimize_factor": "1 para no minimizar, entre 0 y 1 para minimizar",
     "minimize_factor": 1,
     "test_size": 0.2,
