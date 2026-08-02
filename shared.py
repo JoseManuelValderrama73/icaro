@@ -1,6 +1,8 @@
 from logger import ExecutionLogger
 
 # EDITABLES
+MAX_LENGHT = 512
+
 def training_output_dir(model, dataset):
     return f"training/{model.split('/')[-1]}/{dataset}"
 
@@ -51,6 +53,7 @@ def get_seed(settings: dict, logger: ExecutionLogger) -> int:
     :param settings: Configuración que puede contener la semilla
     :param logger: Logger para registrar los pasos
     """
+
     if 'seed' in settings:
         if logger: logger.log_step("get_seed", f"Generated seed: {settings['seed']} (from settings)", "COMPLETED")
         return settings['seed']

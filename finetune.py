@@ -15,7 +15,7 @@ def get_model(settings):
         num_labels=2,
         id2label=id2label,
         label2id=label2id,
-        local_files_only=True
+        local_files_only=False
     )
 def get_dataset(settings, logger):
     import tokenizer

@@ -21,7 +21,6 @@ if __name__ == "__main__":
     models = settings['model'].split(",")
     datasets = settings['dataset'].split(",")
     files = settings['code_file'].split(",")
-    max_length = settings.get("max_length", 512)
 
     # Detección automática de GPU para inferencia
     device = 0 if torch.cuda.is_available() else -1
@@ -53,7 +52,7 @@ if __name__ == "__main__":
                         model=model, 
                         tokenizer=tokenizer,
                         truncation=True,
-                        max_length=max_length,
+                        max_length=MAX_LENGHT,
                         device=device
                     )
                     logger.log_step("pipeline", "Pipeline loaded", "COMPLETED")
@@ -64,7 +63,7 @@ if __name__ == "__main__":
                     # Check token length to warn if it will be truncated
                     tokens = classifier.tokenizer(code, truncation=False)
                     num_tokens = len(tokens['input_ids'])
-                    if num_tokens > max_length:
+                    if num_tokens > MAX_LENGHT:
                         logger.log("test.py", f"⚠️ ¡ADVERTENCIA! El código en {f} tiene {num_tokens} tokens. Supera el max_length configurado ({max_length}) y será truncado. Esto puede empeorar las predicciones.")
 
                     result = classifier(code)
