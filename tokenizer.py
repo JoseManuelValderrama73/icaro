@@ -13,7 +13,6 @@ class TransformAction(Enum):
 class TokenizedDataset:
     def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str, logger: ExecutionLogger):
         self.seed = get_seed(settings, logger)
-        self.max_length = settings.get("max_length", 1024)
 
         if settings['minimize_factor'] <= 0 or settings['minimize_factor'] > 1:
             if logger: logger.log_error("TokenizedDataset", "minimize_factor debe estar en el rango (0, 1]")
@@ -44,7 +43,7 @@ class TokenizedDataset:
             examples[self.code_snippet],
             padding="max_length",
             truncation=True,
-            max_length=self.max_length,
+            max_length=MAX_LENGHT,
             return_tensors=None  # Let Trainer handle tensor conversion
         )
         self.label(tk, examples)
