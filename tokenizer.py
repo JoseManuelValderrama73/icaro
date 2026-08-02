@@ -13,6 +13,7 @@ class TransformAction(Enum):
 class TokenizedDataset:
     def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str, logger: ExecutionLogger):
         self.seed = get_seed(settings, logger)
+        self.code_snippet = code_snippet
 
         if settings['minimize_factor'] <= 0 or settings['minimize_factor'] > 1:
             if logger: logger.log_error("TokenizedDataset", "minimize_factor debe estar en el rango (0, 1]")
@@ -28,7 +29,6 @@ class TokenizedDataset:
         clean_ds = dataset.map(self.clean_examples, batched=True)
         if logger: logger.log_step("TokenizedDataset", "Dataset cleaned", "COMPLETED")
 
-        self.code_snippet = code_snippet
         self.dataset = clean_ds.map(self.tokenize, batched=True)
         if logger: logger.log_step("TokenizedDataset", "Dataset tokenized", "COMPLETED")
         '''

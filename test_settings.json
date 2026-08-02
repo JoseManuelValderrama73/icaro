@@ -1,5 +1,5 @@
 {
     "model": "graphcodebert-base",
-    "dataset": "combo",
+    "dataset": "bigvul-draper-diversevul",
     "code_file": "codigo/suma.c"
 }
