@@ -23,12 +23,12 @@ def clean_code(code: str) -> str:
     Limpia una cadena de código fuente.
     Elimina comentarios y sustituye tabulaciones por espacios.
     """
-    import re
+    from re import sub
     # Remove multi-line comments /* */
-    code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
+    code = sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
     
     # Remove single-line comments //
-    code = re.sub(r'//.*?$', '', code, flags=re.MULTILINE)
+    code = sub(r'//.*?$', '', code, flags=re.MULTILINE)
     
     # Replace tabs with spaces
     code = code.replace('\t', '    ')
@@ -58,17 +58,17 @@ def get_seed(settings: dict, logger: ExecutionLogger) -> int:
         if logger: logger.log_step("get_seed", f"Generated seed: {settings['seed']} (from settings)", "COMPLETED")
         return settings['seed']
     
-    import hashlib
+    from hashlib import md5
     from datetime import datetime
 
     timestamp = datetime.now().isoformat()
-    hash_object = hashlib.md5(timestamp.encode())
+    hash_object = md5(timestamp.encode())
     seed = int(hash_object.hexdigest()[:8], 16)
-    if logger: logger.log_step("get_seed", f"Generated seed: {seed} (timestamp: {timestamp})", "COMPLETED")
+    if logger: logger.log_step("shared.py::get_seed", f"Semilla generada: {seed} (timestamp: {timestamp})", "COMPLETED")
     return seed
 
 def load_settings(file: str):
-    import json
+    from json import load
     with open(file, 'r') as file:
-        settings = json.load(file)
+        settings = load(file)
     return settings

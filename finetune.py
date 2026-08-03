@@ -47,12 +47,12 @@ def train(model, dataset):
     if torch.cuda.is_available():
         if torch.cuda.is_bf16_supported():
             use_bf16 = True
-            logger.log("finetune.py", "Hardware soporta BF16. Activando precisión mixta BF16.")
+            logger.log("finetune.py::train()", "Hardware soporta BF16. Activando precisión mixta BF16.")
         else:
             use_fp16 = True
-            logger.log("finetune.py", "Hardware NO soporta BF16. Activando precisión mixta FP16.")
+            logger.log("finetune.py::train()", "Hardware NO soporta BF16. Activando precisión mixta FP16.")
     else:
-        logger.log("finetune.py", "No se ha detectado GPU. Se usará precisión estándar.")
+        logger.log("finetune.py::train()", "No se ha detectado GPU. Se usará precisión estándar.")
 
     training_args = TrainingArguments(
         output_dir=training_output_dir(settings["model"], settings["dataset"]),
@@ -112,28 +112,28 @@ if __name__ == "__main__":
     
     # Inicializar logger
     logger = ExecutionLogger('finetuning', settings)
-    logger.log_step("finetune.py", "Finetuning execution")
+    logger.log_step("finetune.py", "Ejecutando Finetune")
     
     try:
         model = get_model(settings)
-        logger.log_step("finetune.py", "Model loaded", "COMPLETED")
+        logger.log_step("finetune.py", "Modelo cargado", "COMPLETED")
         
         dataset = get_dataset(settings, logger)
-        logger.log_step("finetune.py", "Dataset loaded", "COMPLETED")
+        logger.log_step("finetune.py", "Dataset cargado", "COMPLETED")
         
         model_save_path = model_save_path(settings["model"], settings["dataset"])
         tokenizer_save_path = tokenizer_save_path(settings["model"], settings["dataset"])
-        logger.log("finetune.py", f"Model will be saved to: {model_save_path}")
-        logger.log("finetune.py", f"Tokenizer will be saved to: {tokenizer_save_path}")
+        logger.log("finetune.py", f"El modelo se guardara en: {model_save_path}")
+        logger.log("finetune.py", f"El Tokenizador se guardara en: {tokenizer_save_path}")
 
         trainer = train(model, dataset)
-        logger.log_step("finetune.py", "Training process", "COMPLETED")
+        logger.log_step("finetune.py", "Proceso de entrenamiento", "COMPLETED")
 
         trainer.save_model(model_save_path)
-        logger.log_step("finetune.py", "Model saved", "COMPLETED")
+        logger.log_step("finetune.py", "Modelo guardado", "COMPLETED")
         
         dataset.tokenizer.save_pretrained(tokenizer_save_path)
-        logger.log_step("finetune.py", "Tokenizer saved", "COMPLETED")
+        logger.log_step("finetune.py", "Tokenizador guardado", "COMPLETED")
 
         print(f"Modelo guardado exitosamente en {model_save_path}\nTokenizador guardado exitosamente en {tokenizer_save_path}")
         

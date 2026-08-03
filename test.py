@@ -32,20 +32,20 @@ if __name__ == "__main__":
     for m in models:
         for d in datasets:
             for f in files:
-                logger.log_step("test.py", f"""Testing execution {i}/{len(models)*len(datasets)*len(files)}
-                                            Model: {m}
+                logger.log_step("test.py", f"""Ejecucion {i}/{len(models)*len(datasets)*len(files)}
+                                            Modelo: {m}
                                             Dataset: {d}
-                                            File: {f}
+                                            Archivo: {f}
                                             """)
                 i += 1
                 try:
                     model = model_save_path(m, d)
                     tokenizer = tokenizer_save_path(m, d)
-                    logger.log("test.py", f"Model path: {model}")
-                    logger.log("test.py", f"Tokenizer path: {tokenizer}")
+                    logger.log("test.py", f"Path del modelo: {model}")
+                    logger.log("test.py", f"Path del Tokenizador: {tokenizer}")
                     
                     check_dirs(model, tokenizer, f)
-                    logger.log_step("check_dirs", "Directories verified", "COMPLETED")
+                    logger.log_step("check_dirs", "Directorios verificados", "COMPLETED")
 
                     classifier = pipeline(
                         "text-classification", 
@@ -55,19 +55,18 @@ if __name__ == "__main__":
                         max_length=MAX_LENGHT,
                         device=device
                     )
-                    logger.log_step("pipeline", "Pipeline loaded", "COMPLETED")
+                    logger.log_step("pipeline", "Pipeline cargado", "COMPLETED")
 
                     code = get_code(f)
-                    logger.log_step("get_code", f"Code from {f} loaded and formatted", "COMPLETED")
+                    logger.log_step("get_code", f"Código de {f} cargado y formateado", "COMPLETED")
 
                     # Check token length to warn if it will be truncated
                     tokens = classifier.tokenizer(code, truncation=False)
-                    num_tokens = len(tokens['input_ids'])
-                    if num_tokens > MAX_LENGHT:
+                    if len(tokens['input_ids']) > MAX_LENGHT:
                         logger.log("test.py", f"⚠️ ¡ADVERTENCIA! El código en {f} tiene {num_tokens} tokens. Supera el max_length configurado ({max_length}) y será truncado. Esto puede empeorar las predicciones.")
 
                     result = classifier(code)
-                    logger.log("classifier", f"Classification result: {result}")
+                    logger.log("classifier", f"Resultado de la clasificación: {result}")
                     
                     output = "El codigo es vulnerable" if result[0]['label'] == 'VULNERABLE' else "El código es seguro"
                     print(output + " con una probabilidad del {:.3f}%".format(result[0]['score'] * 100))

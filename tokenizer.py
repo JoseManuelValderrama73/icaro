@@ -13,30 +13,24 @@ class TransformAction(Enum):
 class TokenizedDataset:
     def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str, logger: ExecutionLogger):
         self.seed = get_seed(settings, logger)
+        self.code_snippet = code_snippet
 
         if settings['minimize_factor'] <= 0 or settings['minimize_factor'] > 1:
-            if logger: logger.log_error("TokenizedDataset", "minimize_factor debe estar en el rango (0, 1]")
-            if logger: logger.finalize("TokenizedDataset", "FAILED")
+            if logger: logger.log_error("TokenizedDataset::__init__", "minimize_factor debe estar en el rango (0, 1]")
+            if logger: logger.finalize("TokenizedDataset::__init__", "FAILED")
             raise ValueError("minimize_factor debe estar en el rango (0, 1]")
         if settings['minimize_factor'] != 1:
             self.minimize(settings['minimize_factor'], dataset)
-            if logger: logger.log_step("TokenizedDataset", f"Dataset minimized by factor {settings['minimize_factor']}", "COMPLETED")
+            if logger: logger.log_step("TokenizedDataset::__init__", f"Dataset reducido por factor {settings['minimize_factor']}", "COMPLETED")
 
         self.tokenizer = AutoTokenizer.from_pretrained(settings["model_path"], local_files_only=True)
-        if logger: logger.log_step("TokenizedDataset", f"Tokenizer {settings['model']} loaded", "COMPLETED")
+        if logger: logger.log_step("TokenizedDataset::__init__", f"Tokenizador {settings['model']} cargado", "COMPLETED")
 
         clean_ds = dataset.map(self.clean_examples, batched=True)
-        if logger: logger.log_step("TokenizedDataset", "Dataset cleaned", "COMPLETED")
+        if logger: logger.log_step("TokenizedDataset::__init__", "Dataset limpiado", "COMPLETED")
 
-        self.code_snippet = code_snippet
         self.dataset = clean_ds.map(self.tokenize, batched=True)
-        if logger: logger.log_step("TokenizedDataset", "Dataset tokenized", "COMPLETED")
-        '''
-        try:
-            self.dataset.cleanup_cache_files()
-        except Exception:
-            pass
-        '''
+        if logger: logger.log_step("TokenizedDataset::__init__", "Dataset tokenizado", "COMPLETED")
 
     def tokenize(self, examples):
         tk = self.tokenizer(
@@ -157,17 +151,24 @@ class TokenizedCombo(TokenizedDataset):
         self.dataset = combo
         # print the percentage of the rows with label 1
         for split_name in self.dataset.keys():
-            print(f"Percentage of rows with label 1 in {split_name} BEFORE balancing: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")
+            if logger: logger.log('TokenizedCombo::__init__', f"Porciento de filas con etiqueta 1 en {split_name} ANTES de balancear: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")
             
         self.dataset = self.force_balance(self.dataset, settings.get('seed', 42), logger)
 
         for split_name in self.dataset.keys():
-            print(f"Percentage of rows with label 1 in {split_name} AFTER balancing: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")
+            if logger: logger.log('TokenizedCombo::__init__', f"Porciento de filas con etiqueta 1 en {split_name} DESPUÉS de balancear: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")
         
         super().__init__(settings, self.dataset, 'code', logger)
 
     def force_balance(self, dataset, seed, logger):
-        """Fuerza el balanceo 50-50 de vulnerables y no vulnerables"""
+        """
+        Fuerza el balanceo 50-50 de vulnerables y no vulnerables
+        
+        :param dataset: dataset
+        :param seed: semilla para el balanceo
+        :param logger: logger
+        :return: dataset balanceado
+        """
         from datasets import DatasetDict, concatenate_datasets
         
         balanced_splits = {}
@@ -183,7 +184,7 @@ class TokenizedCombo(TokenizedDataset):
             balanced_splits[split] = concatenate_datasets([vuln, safe]).shuffle(seed=seed)
             
             if logger:
-                logger.log("force_balance", f"{split}: Balanced to {min_count} Vuln and {min_count} Safe (Total: {min_count*2})")
+                logger.log("TokenizedCombo::force_balance", f"{split}: Balanceado a {min_count} vulnerables y {min_count} no vulnerables (Total: {min_count*2})")
                 
         return DatasetDict(balanced_splits)
 
