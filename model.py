@@ -38,12 +38,12 @@ class Model:
             dataloader_num_workers=NUM_GPUS,
         )
         trainer = Trainer(
-            model=model,
+            model=self.model,
             args=training_args,
-            train_dataset=dataset['train'],
-            eval_dataset=dataset['validation'],
+            train_dataset=self.dataset['train'],
+            eval_dataset=self.dataset['validation'],
             compute_metrics=self.__compute_metrics,
-            processing_class=dataset.tokenizer,
+            processing_class=self.dataset.tokenizer,
             #data_collator=data_collator,
             callbacks=[EarlyStoppingCallback(early_stopping_patience=self.settings["early_stopping_patience"])],
         )
@@ -67,6 +67,8 @@ class Model:
 
     def __get_model(self):
         from transformers import AutoModelForSequenceClassification
+        from shared import OFFLINE
+
         self.logger.log_step("Model::__get_model", "Cargando modelo", "STARTED")
 
         id2label = {0: "SAFE", 1: "VULNERABLE"}
@@ -112,6 +114,7 @@ class Model:
         }
 
     def __use_mixed_precision(self):
+        import torch
         use_bf16, use_fp16 = False, False
         if torch.cuda.is_available():
             if torch.cuda.is_bf16_supported():

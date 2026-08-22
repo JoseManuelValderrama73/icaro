@@ -1,3 +1,6 @@
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 from logger import ExecutionLogger
 
 # EDITABLES
@@ -25,12 +28,12 @@ def clean_code(code: str) -> str:
     Limpia una cadena de código fuente.
     Elimina comentarios y sustituye tabulaciones por espacios.
     """
-    from re import sub
+    import re
     # Remove multi-line comments /* */
-    code = sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
+    code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
     
     # Remove single-line comments //
-    code = sub(r'//.*?$', '', code, flags=re.MULTILINE)
+    code = re.sub(r'//.*?$', '', code, flags=re.MULTILINE)
     
     # Replace tabs with spaces
     code = code.replace('\t', '    ')

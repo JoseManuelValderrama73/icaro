@@ -23,7 +23,7 @@ class TokenizedDataset:
             self.minimize(settings['minimize_factor'], dataset)
             if logger: logger.log_step("TokenizedDataset::__init__", f"Dataset reducido por factor {settings['minimize_factor']}", "COMPLETED")
 
-        self.tokenizer = AutoTokenizer.from_pretrained(settings["model_path"], local_files_only=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(settings["model_path"], local_files_only=OFFLINE)
         if logger: logger.log_step("TokenizedDataset::__init__", f"Tokenizador {settings['model']} cargado", "COMPLETED")
 
         clean_ds = dataset.map(self.clean_examples, batched=True)
