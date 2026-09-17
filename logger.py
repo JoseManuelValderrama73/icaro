@@ -143,7 +143,7 @@ class ExecutionLogger:
             f.write(f"End timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=" * 80 + "\n")
         
-        self.log(class_name, f"Execution finished with status: {status}")
+        self.log(class_name, f"Execution finished with status: {status}\n\n\n")
         print(f"\nLog file saved at: {self.log_file}")
 
 

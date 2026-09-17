@@ -71,6 +71,10 @@ if __name__ == "__main__":
                     output = "El codigo es vulnerable" if result[0]['label'] == 'VULNERABLE' else "El código es seguro"
                     print(output + " con una probabilidad del {:.3f}%".format(result[0]['score'] * 100))
                     
+                    logger.log_step("test.py", output + " con una probabilidad del {:.3f}%".format(result[0]['score'] * 100), "COMPLETED")
+
+                    logger.finalize("test.py", "SUCCESS")
+                    
                 except Exception as e:
                     logger.log_error("test.py", e)
                     logger.finalize("test.py", "FAILED")
