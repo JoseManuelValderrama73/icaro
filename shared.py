@@ -6,7 +6,7 @@ from logger import ExecutionLogger
 # EDITABLES
 MAX_LENGHT = 512
 NUM_GPUS = 4    # Debe coincidir con "cpus-per-task" en launcher.sbs
-OFFLINE = False
+OFFLINE = True
 
 def training_output_dir(model, dataset):
     return f"training/{model.split('/')[-1]}/{dataset}"
