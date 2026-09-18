@@ -1,7 +1,7 @@
 if __name__ == "__main__":
     from shared import *
     from logger import ExecutionLogger
-    from model import Model
+    from model import Trainer
 
     settings = load_settings('finetune_settings.json')
     
@@ -10,7 +10,7 @@ if __name__ == "__main__":
     logger.log_step("finetune.py", "Ejecutando Finetune")
     
     try:
-        model = Model(settings, logger)
+        model = Trainer(settings, logger)
         
         model_save_path = model_save_path(settings["model"], settings["dataset"])
         tokenizer_save_path = tokenizer_save_path(settings["model"], settings["dataset"])
@@ -22,7 +22,7 @@ if __name__ == "__main__":
         trainer.save_model(model_save_path)
         logger.log_step("finetune.py", "Modelo guardado", "COMPLETED")
         
-        dataset.tokenizer.save_pretrained(tokenizer_save_path)
+        model.dataset.tokenizer.save_pretrained(tokenizer_save_path)
         logger.log_step("finetune.py", "Tokenizador guardado", "COMPLETED")
 
         logger.log("finetune.py", f"Modelo guardado exitosamente en {model_save_path}\nTokenizador guardado exitosamente en {tokenizer_save_path}")

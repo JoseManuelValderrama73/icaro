@@ -40,16 +40,6 @@ def clean_code(code: str) -> str:
     
     return code
 
-def get_code(file_path: str) -> str:
-    """
-    Lee y formatea el código fuente desde un archivo.
-    Elimina comentarios y sustituye tabulaciones por espacios.
-    """
-    with open(file_path, 'r', encoding='utf-8') as f:
-        code = f.read()
-    
-    return clean_code(code)
-
 def get_seed(settings: dict, logger: ExecutionLogger) -> int:
     """
     Obtiene una semilla para la aleatoriedad. Si 'seed' está presente en settings, se utiliza ese valor.
