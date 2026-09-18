@@ -2,17 +2,13 @@
 
 # Setup ADA
 
-## 1. Cambios en el codigo:
-
-1. finetune.py::get_model - descomentar tres lineas y cambiar "local_files_only=True".
-
-## 2. Configuración del entorno virtual
+## 1. Configuración del entorno virtual
 
 `pip freeze > requirements.txt` para generar requirements
 
 `pip install -r requirements.txt` para instalar los paquetes en requirements
 
-## 3. Descargar modelo y dataset
+## 2. Descargar modelo y dataset
 
 Añadir a .bashrc:
 
@@ -43,7 +39,7 @@ Si quieres cambiar el directorio por defecto añade:
 
 `hf download DS --repo-type dataset --local-dir $HF_HOME/datasets/DS`
 
-## 4. Definir variables de entorno
+## 3. Definir variables de entorno
 
 Cambiar en .bashrc:
 
@@ -51,7 +47,7 @@ Cambiar en .bashrc:
     export TRANSFORMERS_OFFLINE=1
     export HF_DATASETS_OFFLINE=1
 
-## 5. Configuración de parámetros
+## 4. Configuración de parámetros
 
 El proyecto se configura a través de archivos JSON. Estos son todos los parámetros posibles:
 
@@ -72,7 +68,7 @@ El proyecto se configura a través de archivos JSON. Estos son todos los paráme
 - **`max_length`**: Longitud máxima (en número de tokens) permitida para las secuencias de entrada.
 - **`seed`**: Semilla aleatoria para garantizar la reproducibilidad de los resultados.
 - **`stopping_steps`** _(Opcional)_: Pasos máximos para usar en un callback de _Early Stopping_ (detener el entrenamiento antes si se alcanza este global step).
-- _(Nota: cualquier campo que empiece por `_` como `_model_path` o `_comment:minimize_factor` es ignorado por el código y actúa como un comentario)._
+- _(Nota: cualquier campo que empiece por `_`como`_model_path`o`\_comment:minimize_factor` es ignorado por el código y actúa como un comentario)._
 
 ### `test_settings.json` (Evaluación del modelo ajustado)
 
@@ -90,7 +86,7 @@ Define la configuración del trabajo en el clúster:
 - **`--mem`**: Memoria RAM asignada.
 - **`--cpus-per-task`**: Hilos/CPU asignados.
 
-## 6. Estructura del Proyecto
+## 5. Estructura del Proyecto
 
 El repositorio está organizado en las siguientes carpetas principales:
 
