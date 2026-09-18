@@ -148,8 +148,8 @@ class Trainer:
 
         if OFFLINE:
             import os
-            if not os.path.exists(settings["model_path"]):
-                raise ValueError(f"El path del modelo no existe: {settings['model_path']}. Asegúrate de haber descargado el modelo correctamente según las instrucciones en README.")
+            if not os.path.exists(self.settings["model_path"]):
+                raise ValueError(f"El path del modelo no existe: {self.settings['model_path']}. Asegúrate de haber descargado el modelo correctamente según las instrucciones en README.")
 
         model = AutoModelForSequenceClassification.from_pretrained(
             self.settings["model_path"], 
