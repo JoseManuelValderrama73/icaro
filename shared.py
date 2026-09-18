@@ -1,7 +1,12 @@
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 from logger import ExecutionLogger
 
 # EDITABLES
 MAX_LENGHT = 512
+NUM_GPUS = 4    # Debe coincidir con "cpus-per-task" en launcher.sbs
+OFFLINE = False
 
 def training_output_dir(model, dataset):
     return f"training/{model.split('/')[-1]}/{dataset}"
@@ -35,16 +40,6 @@ def clean_code(code: str) -> str:
     
     return code
 
-def get_code(file_path: str) -> str:
-    """
-    Lee y formatea el código fuente desde un archivo.
-    Elimina comentarios y sustituye tabulaciones por espacios.
-    """
-    with open(file_path, 'r', encoding='utf-8') as f:
-        code = f.read()
-    
-    return clean_code(code)
-
 def get_seed(settings: dict, logger: ExecutionLogger) -> int:
     """
     Obtiene una semilla para la aleatoriedad. Si 'seed' está presente en settings, se utiliza ese valor.
@@ -58,17 +53,17 @@ def get_seed(settings: dict, logger: ExecutionLogger) -> int:
         if logger: logger.log_step("get_seed", f"Generated seed: {settings['seed']} (from settings)", "COMPLETED")
         return settings['seed']
     
-    import hashlib
+    from hashlib import md5
     from datetime import datetime
 
     timestamp = datetime.now().isoformat()
-    hash_object = hashlib.md5(timestamp.encode())
+    hash_object = md5(timestamp.encode())
     seed = int(hash_object.hexdigest()[:8], 16)
-    if logger: logger.log_step("get_seed", f"Generated seed: {seed} (timestamp: {timestamp})", "COMPLETED")
+    if logger: logger.log_step("shared.py::get_seed", f"Semilla generada: {seed} (timestamp: {timestamp})", "COMPLETED")
     return seed
 
 def load_settings(file: str):
-    import json
+    from json import load
     with open(file, 'r') as file:
-        settings = json.load(file)
+        settings = load(file)
     return settings
