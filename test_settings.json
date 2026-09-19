@@ -1,5 +1,5 @@
 {
     "model": "graphcodebert-base",
     "dataset": "bigvul-draper-diversevul",
-    "code_file": "codigo/suma.c"
+    "code_file": "codigo/safe_dataset_snippet.c,codigo/safe_snippet.c,codigo/safe_file.c,codigo/vul_dataset_snippet1.c,codigo/vul_dataset_snippet2.c"
 }
