@@ -12,6 +12,7 @@ class Tester:
 
     def test(self, m: str, d: str, f: str):
         from transformers import pipeline
+        from shared import model_save_path, tokenizer_save_path
 
         model = model_save_path(m, d)
         tokenizer = tokenizer_save_path(m, d)
