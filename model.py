@@ -8,7 +8,7 @@ class Tester:
 
         # Detección automática de GPU para inferencia
         self.device = 0 if torch.cuda.is_available() else -1
-        self.logger.log_step("Tester::test", f"GPU para inferencia {"" if device == 0 else "no"} disponible", "COMPLETED")
+        self.logger.log_step("Tester::test", f"GPU para inferencia {"" if self.device == 0 else "no"} disponible", "COMPLETED")
 
     def test(self, m: str, d: str, f: str):
         from transformers import pipeline
