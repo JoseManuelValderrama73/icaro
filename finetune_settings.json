@@ -1,0 +1,20 @@
+{
+    "model": "graphcodebert-base",
+    "_model_path": "/mnt/beegfs/jmvs0008/huggingface/hub/graphcodebert",
+    "model_path": "microsoft/graphcodebert-base",
+    "dataset": "combo",
+    "_dataset_path": "/mnt/beegfs/jmvs0008/huggingface/datasets/bigvul",
+    "dataset_path": "bstee615/bigvul,claudios/Draper,bstee615/diversevul",
+    "_comment:minimize_factor": "1 para no minimizar, entre 0 y 1 para minimizar",
+    "minimize_factor": 1,
+    "test_size": 0.2,
+    "num_epochs": 5,
+    "batch_size": 16,
+    "gradient_accumulation_steps": 4,
+    "early_stopping_patience": 3,
+    "learning_rate": 2e-5,
+    "warmup_ratio": 0.1,
+    "weight_decay": 0.01,
+    "seed": 42,
+    "max_lenght": 512
+}

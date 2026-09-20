@@ -1,7 +1,18 @@
+training/
+propuesta_beca.md
+modelos/
 datasets/
+pretrained_models/
+logs/
+logs_ejecucion/
+launch_logs/
+slurm_launcher.sh
+tokenizers/
 yelp_review_classifier/
 bin/
 include/
+LOGGING.md
+mis_pruebas.py
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
