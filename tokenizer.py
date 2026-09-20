@@ -14,6 +14,7 @@ class TokenizedDataset:
     def __init__(self, settings: dict, dataset: DatasetDict, code_snippet: str, logger: ExecutionLogger):
         self.seed = get_seed(settings, logger)
         self.code_snippet = code_snippet
+        self.max_length = settings.get("max_length", 1024)
 
         if settings['minimize_factor'] <= 0 or settings['minimize_factor'] > 1:
             if logger: logger.log_error("TokenizedDataset::__init__", "minimize_factor debe estar en el rango (0, 1]")
@@ -37,7 +38,7 @@ class TokenizedDataset:
             examples[self.code_snippet],
             padding="max_length",
             truncation=True,
-            max_length=MAX_LENGTH,
+            max_length=self.max_length,
             return_tensors=None  # Let Trainer handle tensor conversion
         )
         self.label(tk, examples)
@@ -108,7 +109,7 @@ class TokenizedDataset:
 
 class TokenizedCombo(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
-        paths = settings["dataset_path"].split(",")
+        paths = [p.strip() for p in settings["dataset_path"].split(",")]
             
         from datasets import concatenate_datasets
         combo = None
@@ -131,7 +132,8 @@ class TokenizedCombo(TokenizedDataset):
             
             # Crear splits de validación y test si no existen, sin data leakage
             if 'validation' not in ds.keys() or 'test' not in ds.keys():
-                split1 = ds['train'].train_test_split(test_size=0.3, seed=settings['seed'])
+                test_size = settings.get('test_size', 0.3)
+                split1 = ds['train'].train_test_split(test_size=test_size, seed=settings['seed'])
                 split2 = split1['test'].train_test_split(test_size=0.5, seed=settings['seed'])
                 ds = DatasetDict({
                     'train': split1['train'],        # 70%
@@ -151,12 +153,18 @@ class TokenizedCombo(TokenizedDataset):
         self.dataset = combo
         # print the percentage of the rows with label 1
         for split_name in self.dataset.keys():
-            if logger: logger.log('TokenizedCombo::__init__', f"Porciento de filas con etiqueta 1 en {split_name} ANTES de balancear: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")
+            total = len(self.dataset[split_name])
+            if total > 0:
+                vuln_count = len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1))
+                if logger: logger.log('TokenizedCombo::__init__', f"Porciento de filas con etiqueta 1 en {split_name} ANTES de balancear: {vuln_count / total * 100:.2f}%")
             
         self.dataset = self.force_balance(self.dataset, settings.get('seed', 42), logger)
 
         for split_name in self.dataset.keys():
-            if logger: logger.log('TokenizedCombo::__init__', f"Porciento de filas con etiqueta 1 en {split_name} DESPUÉS de balancear: {len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1)) / len(self.dataset[split_name]) * 100}%")
+            total = len(self.dataset[split_name])
+            if total > 0:
+                vuln_count = len(self.dataset[split_name].filter(lambda example: example['vulnerable'] == 1))
+                if logger: logger.log('TokenizedCombo::__init__', f"Porciento de filas con etiqueta 1 en {split_name} DESPUÉS de balancear: {vuln_count / total * 100:.2f}%")
         
         super().__init__(settings, self.dataset, 'code', logger)
 
@@ -189,6 +197,17 @@ class TokenizedCombo(TokenizedDataset):
         return DatasetDict(balanced_splits)
 
     def transform(self, action: TransformAction, dataset, code, label, safe_tag):
+        """
+        Estandariza los nombres de las columnas y los valores de las etiquetas para 
+        combinar datasets con diferentes formatos en una estructura uniforme ('code' y 'vulnerable').
+        
+        :param action: Instancia de TransformAction que indica cómo procesar las etiquetas
+        :param dataset: Dataset original de Hugging Face
+        :param code: Nombre de la columna que contiene el código fuente en el dataset original
+        :param label: Nombre de la columna que contiene la etiqueta en el dataset original
+        :param safe_tag: Valor que representa el estado "seguro" (no vulnerable) en la columna original
+        :return: Nuevo DatasetDict estandarizado
+        """
         from datasets import Dataset, concatenate_datasets
         
         new_splits = {}
@@ -217,23 +236,58 @@ class TokenizedCombo(TokenizedDataset):
         return DatasetDict(new_splits)
 
     def get_label(self, example):
+        """
+        Obtiene la etiqueta pre-procesada del ejemplo.
+        
+        :param example: Diccionario representando una fila del dataset
+        :return: Etiqueta numérica (1 para vulnerable, 0 para seguro)
+        """
         return example['vulnerable']
 
     def label(self, tk, examples):
+        """
+        Añade las etiquetas a los ejemplos ya tokenizados para que Trainer las utilice.
+        
+        :param tk: Objeto tokenizado (diccionario de arrays)
+        :param examples: Ejemplos originales de Hugging Face
+        """
         tk['labels'] = [int(v) for v in examples['vulnerable']]
 
     def cleanup_formai(self, dataset):
-        """ Elimina ejemplos no verificados """
+        """ 
+        Elimina ejemplos no verificados específicamente del dataset FormaI.
+        
+        :param dataset: Dataset original de FormaI
+        :return: Dataset filtrado
+        """
         return dataset.filter(lambda example: example['verification_finished'] == 'yes')
 
 class TokenizedCastle(TokenizedDataset):
     def __init__(self, settings: dict, logger: ExecutionLogger):
+        """
+        Inicializa un dataset a partir del dataset Castle y lo procesa/tokeniza.
+        
+        :param settings: Diccionario con configuraciones
+        :param logger: Logger para el seguimiento
+        """
         dataset = load_dataset('json', data_files=settings['dataset_path'], field='tests')
         super().__init__(settings, dataset, 'code', logger)
 
     def get_label(self, example):
+        """
+        Extrae la etiqueta del ejemplo de Castle.
+        
+        :param example: Fila del dataset
+        :return: 1 si es vulnerable, 0 si no
+        """
         return 1 if example['vulnerable'] else 0
 
     def label(self, tk, examples):
+        """
+        Añade las etiquetas a los ejemplos tokenizados, convirtiendo True/False a 1/0.
+        
+        :param tk: Objeto tokenizado
+        :param examples: Ejemplos originales
+        """
         # convierto de True y False a 1 y 0
         tk['labels'] = [int(v) for v in examples['vulnerable']]

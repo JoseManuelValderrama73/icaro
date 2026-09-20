@@ -4,7 +4,6 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from logger import ExecutionLogger
 
 # EDITABLES
-MAX_LENGTH = 512
 NUM_GPUS = 4    # Debe coincidir con "cpus-per-task" en launcher.sbs
 OFFLINE = False
 
@@ -19,6 +18,7 @@ def tokenizer_save_path(model, dataset):
 TRAINING_LOG_PATH = "logs/training/"
 def finetuning_log_path(model, dataset):
     return f"logs/finetuning/{model.split('/')[-1]}/{dataset}"
+
 def testing_log_path(model, dataset):
     return f"logs/testing/{model.split('/')[-1]}/{dataset}"
 
@@ -26,7 +26,10 @@ def testing_log_path(model, dataset):
 def clean_code(code: str) -> str:
     """
     Limpia una cadena de código fuente.
-    Elimina comentarios y sustituye tabulaciones por espacios.
+    Elimina comentarios de una y varias líneas, y sustituye tabulaciones por espacios.
+    
+    :param code: Código fuente original a limpiar
+    :return: Código fuente limpio en formato string
     """
     import re
     # Remove multi-line comments /* */
@@ -47,6 +50,7 @@ def get_seed(settings: dict, logger: ExecutionLogger) -> int:
     
     :param settings: Configuración que puede contener la semilla
     :param logger: Logger para registrar los pasos
+    :return: Valor entero de la semilla generada o recuperada
     """
 
     if 'seed' in settings:
@@ -63,6 +67,12 @@ def get_seed(settings: dict, logger: ExecutionLogger) -> int:
     return seed
 
 def load_settings(file: str):
+    """
+    Carga la configuración desde un archivo JSON.
+    
+    :param file: Ruta del archivo JSON de configuración a cargar
+    :return: Diccionario con los parámetros de configuración
+    """
     from json import load
     with open(file, 'r') as file:
         settings = load(file)

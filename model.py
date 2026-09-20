@@ -2,6 +2,8 @@ from logger import ExecutionLogger
 from shared import *
 
 class Tester:
+    """Clase encargada de evaluar un modelo ya entrenado haciendo inferencias sobre archivos de código."""
+
     def __init__(self, logger: ExecutionLogger):
         import torch
 
@@ -12,6 +14,14 @@ class Tester:
         self.logger.log_step("Tester::test", f"GPU para inferencia {"" if self.device == 0 else "no"} disponible", "COMPLETED")
 
     def test(self, m: str, d: str, f: str):
+        """
+        Evalúa si un archivo de código fuente C es seguro o vulnerable utilizando un modelo entrenado.
+
+        :param m: Nombre o alias del modelo entrenado
+        :param d: Nombre del dataset con el que fue entrenado el modelo
+        :param f: Ruta al archivo fuente .c a analizar
+        :return: Lista de diccionarios devuelta por el clasificador (pipeline de Hugging Face)
+        """
         from transformers import pipeline
 
         model = model_save_path(m, d)
@@ -20,23 +30,32 @@ class Tester:
         self.logger.log("Tester::test", f"Path del modelo: {model}")
         self.logger.log("Tester::test", f"Path del tokenizador: {tokenizer}")
 
+        max_length = self.logger.settings.get("max_length", 1024)
+
         classifier = pipeline(
             "text-classification", 
             model=model, 
             tokenizer=tokenizer,
             truncation=True,
-            max_length=MAX_LENGTH,
+            max_length=max_length,
             device=self.device
         )
         self.logger.log_step("Tester::test", "Pipeline cargado", "COMPLETED")
 
         code = self.__get_code(f)
 
-        self.__check_truncamiento(classifier, code)
+        self.__check_truncamiento(classifier, code, f, max_length)
 
         return classifier(code)
     
-    def __check_dirs(self, model_path, tokenizer_path, code_path):
+    def __check_dirs(self, model_path: str, tokenizer_path: str, code_path: str):
+        """
+        Verifica que existan en el sistema de archivos los directorios y archivos requeridos.
+
+        :param model_path: Ruta a la carpeta del modelo entrenado
+        :param tokenizer_path: Ruta a la carpeta del tokenizador
+        :param code_path: Ruta al archivo de código fuente
+        """
         import os
 
         if not os.path.exists(model_path):
@@ -51,7 +70,10 @@ class Tester:
     def __get_code(self, file_path: str) -> str:
         """
         Lee y formatea el código fuente desde un archivo.
-        Elimina comentarios y sustituye tabulaciones por espacios.
+        Elimina comentarios y sustituye tabulaciones por espacios mediante funciones compartidas.
+
+        :param file_path: Ruta al archivo de código
+        :return: Código limpio preparado para la tokenización
         """
 
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -62,17 +84,25 @@ class Tester:
 
         return code
     
-    def __check_truncamiento(self, classifier, code):
+    def __check_truncamiento(self, classifier, code: str, file_path: str, max_length: int):
         """
-        Comprobar longitud de tokens y avisar si hay truncamiento
+        Comprueba la longitud de los tokens de entrada y avisa en el log si excede la longitud máxima (causando truncamiento).
+
+        :param classifier: Objeto pipeline de Hugging Face
+        :param code: Código fuente en formato string
+        :param file_path: Ruta del archivo para el mensaje de log
+        :param max_length: Límite máximo de tokens configurado
         """
 
         tokens = classifier.tokenizer(code, truncation=False)
-        if len(tokens['input_ids']) > MAX_LENGTH:
-            self.logger.log("Tester::test", f"!! El código en {f} tiene {num_tokens} tokens. Supera el max_length configurado ({max_length}) y será truncado. Esto puede empeorar las predicciones.")
-        
+        num_tokens = len(tokens['input_ids'])
+        if num_tokens > max_length:
+            self.logger.log("Tester::test", f"!! El código en {file_path} tiene {num_tokens} tokens. Supera el max_length configurado ({max_length}) y será truncado. Esto puede empeorar las predicciones.")
+
 
 class Trainer:
+    """Clase encargada de preparar y ejecutar el fine-tuning del modelo sobre los datasets."""
+
     def __init__(self, settings: dict, logger: ExecutionLogger):
         self.logger = logger
         self.settings = settings
@@ -80,6 +110,12 @@ class Trainer:
         self.dataset = self.__get_dataset()
 
     def train(self):
+        """
+        Configura los argumentos de Hugging Face e inicia el proceso de entrenamiento o lo reanuda
+        si hay un checkpoint previo.
+
+        :return: Instancia final del trainer de transformers (tras completar entrenamiento)
+        """
         from transformers import Trainer, TrainingArguments, EarlyStoppingCallback
 
         self.logger.log_step("Trainer::train", "Proceso de entrenamiento", "STARTED")
@@ -137,6 +173,11 @@ class Trainer:
         return trainer
 
     def __get_model(self):
+        """
+        Carga el modelo preentrenado desde la ruta especificada para la clasificación de secuencias.
+        
+        :return: Modelo AutoModelForSequenceClassification preparado para la clasificación binaria
+        """
         from transformers import AutoModelForSequenceClassification
 
         self.logger.log_step("Trainer::__get_model", "Cargando modelo", "STARTED")
@@ -162,14 +203,30 @@ class Trainer:
         return model
         
     def __get_dataset(self):
+        """
+        Determina e inicializa el tipo correcto de dataset procesado y tokenizado
+        en base a los archivos de configuración provistos por el usuario.
+        
+        :return: Instancia de TokenizedDataset (puede ser TokenizedCastle o TokenizedCombo)
+        """
         self.logger.log_step("Trainer::__get_dataset", "Cargando dataset", "STARTED")
         import tokenizer
-        dataset = tokenizer.TokenizedCombo(self.settings, self.logger)
+        paths = self.settings.get("dataset_path", "")
+        if "castle" in paths.lower() or "castle" in self.settings.get("dataset", "").lower():
+            dataset = tokenizer.TokenizedCastle(self.settings, self.logger)
+        else:
+            dataset = tokenizer.TokenizedCombo(self.settings, self.logger)
         
         self.logger.log_step("Trainer::__get_dataset", "Dataset cargado", "COMPLETED")
         return dataset
 
     def __compute_metrics(self, eval_pred):
+        """
+        Calcula las métricas de rendimiento del modelo durante el proceso de validación.
+        
+        :param eval_pred: Tupla conteniendo las predicciones del modelo (logits) y las etiquetas reales (labels)
+        :return: Diccionario con las métricas f1, precisión, recall y accuracy
+        """
         import numpy as np
         from sklearn.metrics import f1_score, precision_score, recall_score
 
@@ -184,6 +241,12 @@ class Trainer:
         }
 
     def __use_mixed_precision(self):
+        """
+        Verifica si el hardware actual soporta precisión mixta BF16 o FP16 para optimizar
+        el uso de la VRAM y la velocidad de la GPU durante el entrenamiento.
+        
+        :return: Tupla de booleanos (use_bf16, use_fp16)
+        """
         import torch
         use_bf16, use_fp16 = False, False
         if torch.cuda.is_available():

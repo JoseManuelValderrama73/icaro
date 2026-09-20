@@ -1,12 +1,17 @@
+"""
+Script principal para la evaluación de modelos (inferencia). Carga los modelos entrenados
+previamente y evalúa si archivos de código fuente especificados son seguros o vulnerables.
+"""
+
 from shared import *
 from logger import ExecutionLogger
 from model import Tester
 
 
 settings = load_settings('test_settings.json')
-models = settings['model'].split(",")
-datasets = settings['dataset'].split(",")
-files = settings['code_file'].split(",")
+models = [x.strip() for x in settings['model'].split(",")]
+datasets = [x.strip() for x in settings['dataset'].split(",")]
+files = [x.strip() for x in settings['code_file'].split(",")]
 
 # Inicializar logger
 logger = ExecutionLogger('testing', settings)
