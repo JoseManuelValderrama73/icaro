@@ -19,19 +19,18 @@ for m in models:
             logger.log_step("test.py", f"""Ejecucion {i}/{len(models)*len(datasets)*len(files)}
                                         Modelo: {m}
                                         Dataset: {d}
-                                        Archivo: {f}
-                                        """)
+                                        Archivo: {f}""")
             i += 1
             try:
                 result = tester.test(m, d, f)
-                logger.log("classifier", f"Resultado de la clasificación: {result}")
+                logger.log_step("test.py", f"{result}", "COMPLETED")
                 
                 output = "El codigo es vulnerable" if result[0]['label'] == 'VULNERABLE' else "El código es seguro"
-                print(output + " con una probabilidad del {:.3f}%".format(result[0]['score'] * 100))
+                logger.log("test.py", output + " con una probabilidad del {:.3f}%".format(result[0]['score'] * 100) + "\n\n")
+                
                 
             except Exception as e:
                 logger.log_error("test.py", e)
                 logger.finalize("test.py", "FAILED")
                 raise
 
-logger.finalize("test.py", "SUCCESS")
