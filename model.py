@@ -32,7 +32,7 @@ class Tester:
 
         code = self.__get_code(f)
 
-        self.__check_truncamiento(classifier)
+        self.__check_truncamiento(classifier, code)
 
         return classifier(code)
     
@@ -62,7 +62,7 @@ class Tester:
 
         return code
     
-    def __check_truncamiento(self, classifier):
+    def __check_truncamiento(self, classifier, code):
         """
         Comprobar longitud de tokens y avisar si hay truncamiento
         """
