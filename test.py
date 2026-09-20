@@ -34,3 +34,4 @@ for m in models:
                 logger.finalize("test.py", "FAILED")
                 raise
 
+logger.finalize("test.py", "SUCCESS")
