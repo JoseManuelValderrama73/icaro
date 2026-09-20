@@ -1,4 +1,5 @@
 from logger import ExecutionLogger
+from shared import *
 
 class Tester:
     def __init__(self, logger: ExecutionLogger):
@@ -12,7 +13,6 @@ class Tester:
 
     def test(self, m: str, d: str, f: str):
         from transformers import pipeline
-        from shared import model_save_path, tokenizer_save_path
 
         model = model_save_path(m, d)
         tokenizer = tokenizer_save_path(m, d)
@@ -25,7 +25,7 @@ class Tester:
             model=model, 
             tokenizer=tokenizer,
             truncation=True,
-            max_length=MAX_LENGHT,
+            max_length=MAX_LENGTH,
             device=self.device
         )
         self.logger.log_step("Tester::test", "Pipeline cargado", "COMPLETED")
@@ -54,7 +54,6 @@ class Tester:
         Elimina comentarios y sustituye tabulaciones por espacios.
         """
 
-        from shared import clean_code
         with open(file_path, 'r', encoding='utf-8') as f:
             raw = f.read()
         
@@ -69,7 +68,7 @@ class Tester:
         """
 
         tokens = classifier.tokenizer(code, truncation=False)
-        if len(tokens['input_ids']) > MAX_LENGHT:
+        if len(tokens['input_ids']) > MAX_LENGTH:
             self.logger.log("Tester::test", f"!! El código en {f} tiene {num_tokens} tokens. Supera el max_length configurado ({max_length}) y será truncado. Esto puede empeorar las predicciones.")
         
 
@@ -82,7 +81,6 @@ class Trainer:
 
     def train(self):
         from transformers import Trainer, TrainingArguments, EarlyStoppingCallback
-        from shared import NUM_GPUS, TRAINING_LOG_PATH, training_output_dir
 
         self.logger.log_step("Trainer::train", "Proceso de entrenamiento", "STARTED")
 
@@ -140,7 +138,6 @@ class Trainer:
 
     def __get_model(self):
         from transformers import AutoModelForSequenceClassification
-        from shared import OFFLINE
 
         self.logger.log_step("Trainer::__get_model", "Cargando modelo", "STARTED")
 
