@@ -37,7 +37,7 @@ class TokenizedDataset:
             examples[self.code_snippet],
             padding="max_length",
             truncation=True,
-            max_length=MAX_LENGHT,
+            max_length=MAX_LENGTH,
             return_tensors=None  # Let Trainer handle tensor conversion
         )
         self.label(tk, examples)

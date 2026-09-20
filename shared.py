@@ -4,7 +4,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from logger import ExecutionLogger
 
 # EDITABLES
-MAX_LENGHT = 512
+MAX_LENGTH = 512
 NUM_GPUS = 4    # Debe coincidir con "cpus-per-task" en launcher.sbs
 OFFLINE = True
 
